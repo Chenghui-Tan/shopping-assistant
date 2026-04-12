@@ -13,7 +13,7 @@ export default function Stage3({ sessionId, products, supplementLog, onSupplemen
 
       <div id="results-top">
         {products.map((product, i) => (
-          <ProductCard key={product.product_url + i} product={product} />
+          <ProductCard key={product.product_url || i} product={product} />
         ))}
       </div>
 

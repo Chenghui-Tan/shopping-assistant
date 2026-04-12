@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { answerQuestion, getRecommendations } from '../api'
 
 const TOTAL_QUESTIONS = { kitchen_organizer: 3, water_bottle: 3, smart_display: 3 }
@@ -18,8 +18,11 @@ export default function Stage2({ sessionId, startData, onComplete }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
+  const didFetch = useRef(false)
+
   useEffect(() => {
-    if (!showCategoryChips && !currentQuestion) {
+    if (!showCategoryChips && !currentQuestion && !didFetch.current) {
+      didFetch.current = true
       fetchRecommendations()
     }
   }, [])
