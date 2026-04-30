@@ -106,8 +106,30 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
     }
   }
 
-  const handleChip = (qKey, chip) => {
-    setAnswers((prev) => ({ ...prev, [qKey]: chip }))
+  // Single-select for everything except smart_display 'use_case' (the demo
+  // shows that question allowing multiple highlighted chips). For the
+  // structured backend, only the first picked chip is sent — the rest are
+  // captured as additional preferences for explanation / display only.
+  const handleChip = (qKey, chip, allowMulti = false) => {
+    if (!allowMulti) {
+      setAnswers((prev) => ({ ...prev, [qKey]: chip }))
+      return
+    }
+    setAnswers((prev) => {
+      const cur = prev[qKey]
+      if (Array.isArray(cur)) {
+        return {
+          ...prev,
+          [qKey]: cur.includes(chip) ? cur.filter((c) => c !== chip) : [...cur, chip],
+        }
+      }
+      return { ...prev, [qKey]: cur === chip ? [] : [chip] }
+    })
+  }
+
+  const isSelected = (qKey, chip) => {
+    const v = answers[qKey]
+    return Array.isArray(v) ? v.includes(chip) : v === chip
   }
 
   const handleSubmitAll = async () => {
@@ -123,9 +145,12 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
     setError(null)
     try {
       for (const q of layout) {
-        if (answers[q.key]) {
-          await answerQuestion(sessionId, q.key, answers[q.key], true)
-        }
+        const v = answers[q.key]
+        if (!v) continue
+        // For multi-select, send the first chip as the structured value;
+        // the rest are still visible to the user as their stated preferences.
+        const send = Array.isArray(v) ? v[0] : v
+        if (send) await answerQuestion(sessionId, q.key, send, true)
       }
       const data = await getRecommendations(sessionId)
       onComplete(data.products)
@@ -176,26 +201,31 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
         </div>
       )}
 
-      {layout.map((q) => (
-        <div key={q.key} className="needs-question">
-          <div className="needs-q-text">
-            <span className="needs-q-icon">{q.icon}</span>
-            <span>{q.text}</span>
+      {layout.map((q) => {
+        // Multi-select for the smart_display use_case question — the demo
+        // shows multiple feature chips highlighted at once.
+        const multi = category === 'smart_display' && q.key === 'use_case'
+        return (
+          <div key={q.key} className="needs-question">
+            <div className="needs-q-text">
+              <span className="needs-q-icon">{q.icon}</span>
+              <span>{q.text}{multi && <span className="multi-hint"> · pick one or more</span>}</span>
+            </div>
+            <div className="needs-chip-row">
+              {q.chips.map((chip) => (
+                <button
+                  key={chip}
+                  className={'needs-chip ' + (isSelected(q.key, chip) ? 'needs-chip-selected' : '')}
+                  onClick={() => handleChip(q.key, chip, multi)}
+                  disabled={loading}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="needs-chip-row">
-            {q.chips.map((chip) => (
-              <button
-                key={chip}
-                className={'needs-chip ' + (answers[q.key] === chip ? 'needs-chip-selected' : '')}
-                onClick={() => handleChip(q.key, chip)}
-                disabled={loading}
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+        )
+      })}
 
       <div className="chat-cta">
         <button

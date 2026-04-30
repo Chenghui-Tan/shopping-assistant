@@ -625,6 +625,28 @@ make_table([
 caption("Table 6: Top-1 result per scripted scenario. Score is the combined "
         "shared+category score on the [0, ~1.4] scale used by the ranker.")
 
+para(
+    "Figure 2 plots the distribution of combined scores across each scenario's "
+    "candidate pool. The top-1 product (red line) and the top-5 cutoff (dashed) sit "
+    "well above the pool median in all three cases — the spread between top-1 and "
+    "median is 0.23, 0.37, and 0.30 score-units respectively, in a distribution that "
+    "rarely exceeds 1.5 units of total range. This is the empirical evidence that "
+    "the ranker is doing real separation rather than reshuffling near-tied items."
+)
+
+# Figure 2 — empirical score distribution
+import os as _os
+fig_path = _os.path.join(_os.path.dirname(__file__), "results_score_distribution.png")
+if _os.path.exists(fig_path):
+    fig_p = doc.add_paragraph()
+    fig_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    fig_p.paragraph_format.space_after = Pt(2)
+    fig_p.add_run().add_picture(fig_path, width=Inches(6.4))
+    caption("Figure 2: Combined-score distribution per scenario across the candidate pool. "
+            "Red line = top-1 product, dashed line = top-5 cutoff. Top-1 sits 0.23–0.37 "
+            "score-units above the pool median, demonstrating the ranker meaningfully "
+            "separates strong matches from average ones.")
+
 heading(2, "Comparison Against Baselines", "5.2")
 para(
     "Table 7 evaluates each system on the four structural gaps identified in Section 2. The grading "
