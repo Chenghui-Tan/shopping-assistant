@@ -29,3 +29,9 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Overnight build artifacts (transient)
+overnight.log
+overnight.pid
+docs/~$*.docx
+docs/~$*.pptx
