@@ -1,209 +1,213 @@
 import { useState, useEffect, useRef } from 'react'
 import { answerQuestion, getRecommendations } from '../api'
 
-const TOTAL_QUESTIONS = { kitchen_organizer: 3, water_bottle: 3, smart_display: 3 }
+const CATEGORY_LABELS = [
+  { label: 'Smart Display', value: 'smart_display', tag: 'Smart Display', icon: '🖥️' },
+  { label: 'Water Bottle',  value: 'water_bottle',  tag: 'Water Bottle',  icon: '🥤' },
+  { label: 'Kitchen Organizer', value: 'kitchen_organizer', tag: 'Kitchen Organizer', icon: '🗂️' },
+]
+
+// Question metadata used for the multi-question form layout in Scene 2.
+// Each question shows its own row of chips; the user picks one before
+// submitting all answers at once.
+const QUESTION_LAYOUT = {
+  smart_display: [
+    {
+      key: 'use_case',
+      icon: '👨‍👩‍👧',
+      text: "What's the main thing you'll use it for?",
+      chips: ['Cooking', 'Family calendar', 'Entertainment', 'Smart home control'],
+    },
+    {
+      key: 'price_max',
+      icon: '💲',
+      text: "What's your budget?",
+      chips: ['Under $50', 'Under $100', 'Under $150', 'No limit'],
+    },
+    {
+      key: 'delivery_days_max',
+      icon: '🚚',
+      text: 'How soon do you need it?',
+      chips: ['ASAP (1–2 days)', 'This week', 'No rush'],
+    },
+  ],
+  water_bottle: [
+    {
+      key: 'use_case',
+      icon: '🏃',
+      text: 'What will you mainly use it for?',
+      chips: ['Gym', 'Daily carry', 'Outdoor', 'Kids'],
+    },
+    {
+      key: 'insulated',
+      icon: '🧊',
+      text: 'Do you need it to keep drinks hot or cold?',
+      chips: ['Yes, insulated', "No, doesn't matter"],
+    },
+    {
+      key: 'size_preference',
+      icon: '📏',
+      text: 'Any size preference?',
+      chips: ['Lightweight', 'Large capacity', 'No preference'],
+    },
+  ],
+  kitchen_organizer: [
+    {
+      key: 'use_area',
+      icon: '🏠',
+      text: "Where's the main problem area in your kitchen?",
+      chips: ['Cabinets', 'Countertop', 'Under the sink'],
+    },
+    {
+      key: 'pain_point',
+      icon: '😣',
+      text: "What's your biggest frustration?",
+      chips: ['Not enough space', 'Hard to find things'],
+    },
+    {
+      key: 'structure_type',
+      icon: '🧱',
+      text: 'Any preference on the type of organizer?',
+      chips: ['Stackable', 'Drawer', 'Bin', 'Expandable', 'Lazy Susan'],
+    },
+  ],
+}
 
 function LoadingDots() {
   return <span className="loading-dots"><span /><span /><span /></span>
 }
 
-export default function Stage2({ sessionId, startData, onComplete }) {
-  const [currentQuestion, setCurrentQuestion] = useState(startData.next_question || null)
-  const [showCategoryChips, setShowCategoryChips] = useState(!!startData.chips)
-  const [stepIndex, setStepIndex] = useState(0)
-  const [totalSteps, setTotalSteps] = useState(
-    startData.category ? (TOTAL_QUESTIONS[startData.category] || 3) : 3
-  )
-  const [freeText, setFreeText] = useState('')
+export default function Stage2({ sessionId, startData, openingTurn, onComplete }) {
+  const [category, setCategory] = useState(startData?.category || null)
+  const [pickingCategory, setPickingCategory] = useState(!startData?.category)
+  const [answers, setAnswers] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const submitted = useRef(false)
 
-  const didFetch = useRef(false)
-
+  // If the LLM already pre-filled the category, respect it.
   useEffect(() => {
-    if (!showCategoryChips && !currentQuestion && !didFetch.current) {
-      didFetch.current = true
-      fetchRecommendations()
-    }
-  }, [])
+    if (startData?.category && !category) setCategory(startData.category)
+    if (startData?.category) setPickingCategory(false)
+  }, [startData])
 
-  const fetchRecommendations = async () => {
+  const pickCategory = async (cat) => {
     setLoading(true)
+    setError(null)
     try {
+      const labelMap = { smart_display: 'Smart Display', water_bottle: 'Water Bottle', kitchen_organizer: 'Kitchen Organizer' }
+      await answerQuestion(sessionId, 'category', labelMap[cat], true)
+      setCategory(cat)
+      setPickingCategory(false)
+    } catch (e) {
+      setError('Could not select category.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChip = (qKey, chip) => {
+    setAnswers((prev) => ({ ...prev, [qKey]: chip }))
+  }
+
+  const handleSubmitAll = async () => {
+    if (submitted.current || loading) return
+    const layout = QUESTION_LAYOUT[category] || []
+    const missing = layout.filter((q) => !answers[q.key])
+    if (missing.length === layout.length) {
+      setError('Pick at least one option to continue.')
+      return
+    }
+    submitted.current = true
+    setLoading(true)
+    setError(null)
+    try {
+      for (const q of layout) {
+        if (answers[q.key]) {
+          await answerQuestion(sessionId, q.key, answers[q.key], true)
+        }
+      }
       const data = await getRecommendations(sessionId)
       onComplete(data.products)
     } catch (e) {
+      submitted.current = false
       setError('Could not load recommendations. Please try again.')
       setLoading(false)
     }
   }
 
-  const handleChipAnswer = async (questionKey, chipLabel, isCategory = false) => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await answerQuestion(sessionId, questionKey, chipLabel, true)
-      if (isCategory) {
-        setShowCategoryChips(false)
-        const cat = chipLabel.toLowerCase().replace(/ /g, '_')
-        setTotalSteps(TOTAL_QUESTIONS[cat] || 3)
-      }
-      if (data.next_question) {
-        setCurrentQuestion(data.next_question)
-        setStepIndex((i) => i + 1)
-      } else {
-        await fetchRecommendations()
-      }
-    } catch (e) {
-      setError('Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleFreeTextSubmit = async () => {
-    if (!freeText.trim() || loading) return
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await answerQuestion(sessionId, currentQuestion.key, freeText.trim(), false)
-      setFreeText('')
-      if (data.next_question) {
-        setCurrentQuestion(data.next_question)
-        setStepIndex((i) => i + 1)
-      } else {
-        await fetchRecommendations()
-      }
-    } catch (e) {
-      setError('Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSkip = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await answerQuestion(sessionId, currentQuestion.key, '', true)
-      if (data.next_question) {
-        setCurrentQuestion(data.next_question)
-        setStepIndex((i) => i + 1)
-      } else {
-        await fetchRecommendations()
-      }
-    } catch (e) {
-      setError('Something went wrong.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const progressPct = totalSteps > 0 ? Math.round((stepIndex / totalSteps) * 100) : 0
-
-  if (loading && !currentQuestion && !showCategoryChips) {
+  if (pickingCategory) {
     return (
-      <div style={{ textAlign: 'center', paddingTop: 64 }}>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>Finding your matches...</p>
-        <LoadingDots />
+      <div className="needs-form">
+        {openingTurn?.user && (
+          <div className="recap-card">
+            <div className="recap-label">You said</div>
+            <div className="recap-text">"{openingTurn.user}"</div>
+          </div>
+        )}
+        <h3 className="needs-q">First, what category fits best?</h3>
+        <div className="cat-grid">
+          {CATEGORY_LABELS.map((c) => (
+            <button
+              key={c.value}
+              className="cat-card"
+              onClick={() => pickCategory(c.value)}
+              disabled={loading}
+            >
+              <span className="cat-icon">{c.icon}</span>
+              <span>{c.tag}</span>
+            </button>
+          ))}
+        </div>
+        {loading && <div style={{ marginTop: 16 }}><LoadingDots /></div>}
+        {error && <p className="error-msg">{error}</p>}
       </div>
     )
   }
 
+  const layout = QUESTION_LAYOUT[category] || []
+
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', paddingTop: 16 }}>
-      {!showCategoryChips && (
-        <div style={{ marginBottom: 32 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              Step {stepIndex + 1} of {totalSteps}
-            </span>
-          </div>
-          <div className="progress-bar">
-            <div className="progress-bar-fill" style={{ width: `${progressPct}%` }} />
-          </div>
+    <div className="needs-form">
+      {openingTurn?.user && (
+        <div className="recap-card">
+          <div className="recap-label">You said</div>
+          <div className="recap-text">"{openingTurn.user}"</div>
         </div>
       )}
 
-      {showCategoryChips && (
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
-            What are you shopping for?
-          </h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: 28, fontSize: 15 }}>
-            Help me point you in the right direction
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
-            {['Water Bottle', 'Smart Display', 'Kitchen Organizer'].map((label) => (
-              <button
-                key={label}
-                className="chip"
-                onClick={() => handleChipAnswer('category', label, true)}
-                disabled={loading}
-              >
-                {label}
-              </button>
-            ))}
+      {layout.map((q) => (
+        <div key={q.key} className="needs-question">
+          <div className="needs-q-text">
+            <span className="needs-q-icon">{q.icon}</span>
+            <span>{q.text}</span>
           </div>
-          {loading && <div style={{ marginTop: 20 }}><LoadingDots /></div>}
-        </div>
-      )}
-
-      {!showCategoryChips && currentQuestion && (
-        <div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
-            {currentQuestion.text}
-          </h2>
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 24, marginBottom: 24 }}>
-            {currentQuestion.chips.map((chip) => (
+          <div className="needs-chip-row">
+            {q.chips.map((chip) => (
               <button
                 key={chip}
-                className="chip"
-                onClick={() => handleChipAnswer(currentQuestion.key, chip)}
+                className={'needs-chip ' + (answers[q.key] === chip ? 'needs-chip-selected' : '')}
+                onClick={() => handleChip(q.key, chip)}
                 disabled={loading}
               >
                 {chip}
               </button>
             ))}
           </div>
-
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10 }}>
-            Or type your answer:
-          </p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <textarea
-              value={freeText}
-              onChange={(e) => setFreeText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFreeTextSubmit() }
-              }}
-              placeholder="Type here..."
-              rows={2}
-              disabled={loading}
-              style={{ flex: 1 }}
-            />
-            <button
-              className="btn-primary"
-              onClick={handleFreeTextSubmit}
-              disabled={!freeText.trim() || loading}
-              style={{ alignSelf: 'flex-end', padding: '10px 16px' }}
-            >
-              {loading ? <LoadingDots /> : '→'}
-            </button>
-          </div>
-
-          <div style={{ marginTop: 16, textAlign: 'right' }}>
-            <button className="btn-ghost" onClick={handleSkip} disabled={loading}>
-              Skip →
-            </button>
-          </div>
         </div>
-      )}
+      ))}
 
-      {error && (
-        <p style={{ color: '#ef4444', marginTop: 16, fontSize: 14 }}>{error}</p>
-      )}
+      <div className="chat-cta">
+        <button
+          className="btn-primary"
+          onClick={handleSubmitAll}
+          disabled={loading}
+        >
+          {loading ? <LoadingDots /> : 'See recommendations →'}
+        </button>
+      </div>
+
+      {error && <p className="error-msg">{error}</p>}
     </div>
   )
 }

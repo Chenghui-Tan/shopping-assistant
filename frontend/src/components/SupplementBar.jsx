@@ -20,7 +20,7 @@ export default function SupplementBar({ sessionId, supplementLog, onSupplement }
       setText('')
       document.getElementById('results-top')?.scrollIntoView({ behavior: 'smooth' })
     } catch (e) {
-      setError('Something went wrong. Please try again.')
+      setError('Could not refine. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -35,16 +35,16 @@ export default function SupplementBar({ sessionId, supplementLog, onSupplement }
               fontSize: 13, color: 'var(--text-secondary)',
               padding: '6px 0',
               borderBottom: i < Math.min(supplementLog.length, 3) - 1
-                ? '1px solid rgba(108,99,255,0.08)' : 'none',
+                ? '1px solid var(--border-soft)' : 'none',
             }}>
-              <span style={{ color: 'var(--chip-text)', fontWeight: 600 }}>Assistant: </span>
+              <span style={{ color: 'var(--accent-blue-2)', fontWeight: 600 }}>Assistant: </span>
               {entry.aiResponse}
             </div>
           ))}
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+      <div className="supp-input-row">
         <input
           type="text"
           value={text}
@@ -53,20 +53,19 @@ export default function SupplementBar({ sessionId, supplementLog, onSupplement }
           placeholder='Refine: "under $20", "faster delivery", "actually for outdoor use"'
           disabled={loading}
           className="text-input"
-          style={{ flex: 1 }}
         />
         <button
           className="btn-primary"
           onClick={handleSubmit}
           disabled={!text.trim() || loading}
-          style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
+          style={{ padding: '11px 18px', whiteSpace: 'nowrap' }}
         >
           {loading ? <LoadingDots /> : 'Update →'}
         </button>
       </div>
 
       {error && (
-        <p style={{ color: '#ef4444', marginTop: 8, fontSize: 13 }}>{error}</p>
+        <p className="error-msg" style={{ marginTop: 8 }}>{error}</p>
       )}
     </div>
   )

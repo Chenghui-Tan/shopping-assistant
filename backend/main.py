@@ -72,10 +72,19 @@ def _format_product(p: dict, explanation: str) -> dict:
 
 
 def _run_recommendations(session: dict) -> list[dict]:
-    products = engine.recommend_products(session["preferences"], top_n=5)
-    explanations = claude_client.write_explanations(
-        products, session["preferences"], session["raw_input"]
-    )
+    # Merge session.category into the preferences dict the engine expects.
+    # The engine resolves category from preferences["category"], but the
+    # session stores it as a top-level field for clarity.
+    prefs = {**session["preferences"], "category": session["category"]}
+    products = engine.recommend_products(prefs, top_n=12)
+    try:
+        explanations = claude_client.write_explanations(
+            products, session["preferences"], session["raw_input"]
+        )
+    except Exception:
+        # Fall back to the deterministic engine's own explanation so the demo
+        # works without an Anthropic API key.
+        explanations = [p.get("_explanation", "") for p in products]
     formatted = [_format_product(p, explanations[i]) for i, p in enumerate(products)]
     session_store.set_recommendations(session["session_id"], formatted)
     return formatted
@@ -85,9 +94,16 @@ def _run_recommendations(session: dict) -> list[dict]:
 
 @app.post("/session/start")
 def start_session(body: StartBody):
-    parsed = claude_client.parse_initial_input(body.text)
-    category = parsed.get("category", "unknown")
-    preferences = parsed.get("preferences", {})
+    # Best-effort LLM parse. If the API key is a placeholder or the call fails
+    # for any reason, fall back to letting the user pick a category from chips
+    # — the demo must remain usable without external dependencies.
+    try:
+        parsed = claude_client.parse_initial_input(body.text)
+        category = parsed.get("category", "unknown")
+        preferences = parsed.get("preferences", {})
+    except Exception:
+        category = "unknown"
+        preferences = {}
 
     if category == "unknown" or not category:
         category = ""
@@ -129,7 +145,11 @@ def answer_question(body: AnswerBody):
     else:
         q = get_question(s["category"], body.question_key)
         question_text = q["text"] if q else body.question_key
-        value = claude_client.map_free_text_answer(body.question_key, question_text, body.answer)
+        try:
+            value = claude_client.map_free_text_answer(body.question_key, question_text, body.answer)
+        except Exception:
+            # Fall back: store the raw text — the engine treats unknowns gracefully.
+            value = body.answer
 
     session_store.update_preferences(body.session_id, {body.question_key: value})
     session_store.record_answer(body.session_id, body.question_key)
@@ -152,7 +172,15 @@ def refine(body: RefineBody):
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    result = claude_client.parse_supplement(body.text, s["preferences"], s["raw_input"])
+    try:
+        result = claude_client.parse_supplement(body.text, s["preferences"], s["raw_input"])
+    except Exception:
+        # Without LLM access, treat the user's supplement as an acknowledged note
+        # and re-run recommendations against the same preferences.
+        result = {
+            "preference_updates": {},
+            "ai_response": f'Got it — "{body.text}". Updated recommendations below.',
+        }
     session_store.update_preferences(body.session_id, result["preference_updates"])
 
     s = session_store.get_session(body.session_id)
@@ -160,3 +188,88 @@ def refine(body: RefineBody):
     session_store.add_supplement_log(body.session_id, body.text, result["ai_response"])
 
     return {"products": products, "ai_response": result["ai_response"]}
+
+
+# Lifecycle data for Scene 5 — keyed per category. Mock data so the
+# post-purchase view always renders in the demo without requiring real
+# integrations (calendar, smart home, etc.).
+LIFECYCLE_DATA = {
+    "smart_display": {
+        "header": "Kitchen Display",
+        "schedule": [
+            {"time": "9:00 AM",  "label": "Soccer practice — Emma"},
+            {"time": "2:00 PM",  "label": "Grocery delivery"},
+            {"time": "6:00 PM",  "label": "Family dinner"},
+        ],
+        "menu": [
+            {"meal": "Breakfast", "label": "Greek yogurt & granola"},
+            {"meal": "Lunch",     "label": "Chicken salad wrap"},
+            {"meal": "Dinner",    "label": "Teriyaki salmon bowl"},
+        ],
+        "video": {"title": "Cooking show: Quick weeknight meals",
+                  "subtitle": "Watch while preparing dinner"},
+        "cards": [
+            {"icon": "🍴",  "title": "Meal Planning",
+             "body": "Track nutrition, plan meals ahead, and generate shopping lists automatically."},
+            {"icon": "👨‍👩‍👧", "title": "Family Hub",
+             "body": "Sync schedules, leave messages, and coordinate family activities in one place."},
+            {"icon": "🎬",  "title": "Entertainment",
+             "body": "Watch cooking shows, follow video recipes, or enjoy music during meal prep."},
+        ],
+    },
+    "water_bottle": {
+        "header": "Daily Hydration",
+        "schedule": [
+            {"time": "7:00 AM",  "label": "Morning workout — 32oz before"},
+            {"time": "12:30 PM", "label": "Refill at lunch"},
+            {"time": "5:00 PM",  "label": "Evening run"},
+        ],
+        "menu": [
+            {"meal": "Goal",      "label": "100 oz / day"},
+            {"meal": "Reminder",  "label": "Sip every 20 minutes"},
+            {"meal": "Tonight",   "label": "Lemon-mint infusion"},
+        ],
+        "video": {"title": "Workout reminder: Hydrate before, during, after",
+                  "subtitle": "Coaching tips synced to your run"},
+        "cards": [
+            {"icon": "💧", "title": "Hydration Tracker",
+             "body": "Log every refill; the assistant nudges you when you're falling behind your goal."},
+            {"icon": "🏃", "title": "Workout Companion",
+             "body": "Sync sessions and remind you to top up before, during, and after each workout."},
+            {"icon": "🍋", "title": "Flavor Ideas",
+             "body": "Rotate through citrus, herbal, and electrolyte recipes so plain water never gets boring."},
+        ],
+    },
+    "kitchen_organizer": {
+        "header": "Organized Kitchen",
+        "schedule": [
+            {"time": "Mon",  "label": "Pantry restock — check bins"},
+            {"time": "Wed",  "label": "Wipe down lazy susan"},
+            {"time": "Sat",  "label": "Weekly grocery run"},
+        ],
+        "menu": [
+            {"meal": "Cabinet",   "label": "Stackable bins — clear"},
+            {"meal": "Drawer",    "label": "Flatware tray — sorted"},
+            {"meal": "Counter",   "label": "Spice lazy susan — visible"},
+        ],
+        "video": {"title": "Kitchen reset: 10-minute weekly tidy",
+                  "subtitle": "A simple routine to keep everything findable"},
+        "cards": [
+            {"icon": "🗂️", "title": "Stay Organized",
+             "body": "Get gentle weekly nudges to reset bins, drawers, and the lazy susan in 10 minutes."},
+            {"icon": "🛒", "title": "Smart Restock",
+             "body": "Track what's running low and feed it into your shopping list automatically."},
+            {"icon": "✨", "title": "Calm Counters",
+             "body": "Keep the everyday items visible and the rest tucked away — fewer decisions, faster cooking."},
+        ],
+    },
+}
+
+
+@app.get("/session/{session_id}/lifecycle")
+def lifecycle(session_id: str):
+    s = session_store.get_session(session_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    data = LIFECYCLE_DATA.get(s["category"], LIFECYCLE_DATA["smart_display"])
+    return data

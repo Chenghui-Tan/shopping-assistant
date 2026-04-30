@@ -1,59 +1,75 @@
-export default function ProductCard({ product }) {
+function StarRow({ rating }) {
+  if (!rating) return null
+  const filled = Math.round(rating)
   return (
-    <div className="card" style={{ display: 'flex', gap: 16, padding: 20, marginBottom: 16 }}>
-      <a
-        href={product.product_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{ flexShrink: 0 }}
-      >
-        <img
-          src={product.image_url}
-          alt={product.title}
-          style={{
-            width: 80, height: 80, objectFit: 'contain',
-            borderRadius: 8, background: '#f8f8fc',
-          }}
-          onError={(e) => { e.target.style.display = 'none' }}
-        />
-      </a>
+    <span className="star-row">
+      <span className="stars">
+        {'★'.repeat(filled)}{'☆'.repeat(5 - filled)}
+      </span>
+      <span className="rating-num">{rating.toFixed(1)}</span>
+    </span>
+  )
+}
 
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-          <a
-            href={product.product_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              fontSize: 15, fontWeight: 600, color: 'var(--text-primary)',
-              textDecoration: 'none', lineHeight: 1.3,
-            }}
-          >
-            {product.title}
-          </a>
-          <span style={{
-            fontSize: 16, fontWeight: 700,
-            background: 'var(--accent-gradient)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text', flexShrink: 0,
-          }}>
-            ${product.price?.toFixed(2)}
-          </span>
-        </div>
+function FeatureTags({ product }) {
+  const tags = []
+  const title = (product.title || '').toLowerCase()
+  if (product.category === 'smart_display' || /display|hub|touchscreen/.test(title)) tags.push('Recipe Display')
+  if (/voice|alexa|echo|google/.test(title)) tags.push('Voice control')
+  if (/family|calendar|chore/.test(title)) tags.push('Family Hub')
+  if (/insulated|stainless|vacuum/.test(title)) tags.push('Insulated')
+  if (/lightweight|tritan|plastic/.test(title)) tags.push('Lightweight')
+  if (/stackable/.test(title)) tags.push('Stackable')
+  if (/drawer|flatware/.test(title)) tags.push('Drawer fit')
+  if (/bin|fridge|pantry/.test(title)) tags.push('Bin')
+  if (/lazy susan|turn table/.test(title)) tags.push('Lazy Susan')
+  return (
+    <div className="tag-row">
+      {tags.slice(0, 2).map((t) => (
+        <span key={t} className="tag-chip">{t}</span>
+      ))}
+    </div>
+  )
+}
 
-        {product.rating && (
-          <div style={{ fontSize: 13, color: '#f59e0b', marginTop: 4 }}>
-            {'★'.repeat(Math.round(product.rating))}
-            {'☆'.repeat(5 - Math.round(product.rating))}
-            <span style={{ color: 'var(--text-secondary)', marginLeft: 4 }}>
-              {product.rating.toFixed(1)}
-            </span>
-          </div>
+export default function ProductCard({ product, onSelect, highlightSale }) {
+  const deliveryDays = product.arrival_time_days
+  const delivery = deliveryDays != null
+    ? `Delivery: ${deliveryDays === 0 ? 'today' : deliveryDays + (deliveryDays === 1 ? ' day' : ' days')}`
+    : 'Delivery: 2–3 days'
+
+  return (
+    <div className="product-tile" onClick={onSelect} role="button" tabIndex={0}>
+      {highlightSale && <span className="sale-badge">SALE</span>}
+      <div className="tile-image-wrap">
+        {product.image_url ? (
+          <img
+            src={product.image_url}
+            alt={product.title}
+            onError={(e) => { e.target.style.display = 'none' }}
+          />
+        ) : (
+          <div className="image-placeholder" aria-hidden="true">🖥️</div>
         )}
+      </div>
 
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 8, lineHeight: 1.5 }}>
-          {product.explanation}
-        </p>
+      <div className="tile-body">
+        <div className="tile-title" title={product.title}>{product.title}</div>
+        <StarRow rating={product.rating} />
+        <ul className="tile-meta">
+          <li>✓ Hands-free voice control</li>
+          <li>✓ {delivery}</li>
+        </ul>
+        <FeatureTags product={product} />
+        <div className="tile-footer">
+          <span className="tile-price">${product.price?.toFixed(2)}</span>
+          <button
+            className="see-why-btn"
+            onClick={(e) => { e.stopPropagation(); onSelect() }}
+          >
+            See why this fits
+          </button>
+        </div>
       </div>
     </div>
   )

@@ -1,81 +1,114 @@
 import { useState } from 'react'
 import { startSession } from '../api'
 
+const SAMPLE_PROMPTS = [
+  "I cook almost every day, but I usually search recipes on my phone. The screen is too small, and it's really inconvenient to check while cooking.",
+  "I keep losing track of how much water I drink during workouts. My current bottle is heavy and leaks in my gym bag.",
+  "My kitchen drawers are a mess — I waste time every morning hunting for the right utensil and the cabinets feel chaotic.",
+]
+
+const FALLBACK_REPLIES = {
+  smart_display: "That sounds frustrating. Would you like a larger screen that can guide you hands-free while cooking and help manage your meals more easily?",
+  water_bottle: "I hear you — that's a real pain. Want a lightweight, leak-proof bottle that keeps drinks cold and is easy to track on the go?",
+  kitchen_organizer: "Mornings should be calm, not stressful. Let's find organizers that make every utensil and ingredient easy to grab.",
+  default: "That sounds frustrating. Let's figure out what would actually make this easier for you — together.",
+}
+
 function LoadingDots() {
-  return (
-    <span className="loading-dots">
-      <span /><span /><span />
-    </span>
-  )
+  return <span className="loading-dots"><span /><span /><span /></span>
 }
 
 export default function Stage1({ onComplete }) {
   const [text, setText] = useState('')
+  const [submittedText, setSubmittedText] = useState(null)
+  const [reply, setReply] = useState(null)
+  const [pendingData, setPendingData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  const handleSubmit = async () => {
-    if (!text.trim() || loading) return
+  const handleSubmit = async (override) => {
+    const value = (override ?? text).trim()
+    if (!value || loading) return
     setLoading(true)
     setError(null)
     try {
-      const data = await startSession(text.trim())
-      onComplete(data)
+      const data = await startSession(value)
+      setSubmittedText(value)
+      setPendingData(data)
+      const cat = data.category || 'default'
+      setReply(FALLBACK_REPLIES[cat] || FALLBACK_REPLIES.default)
     } catch (e) {
-      setError('Something went wrong. Please try again.')
+      setError('Could not start the conversation. Please try again.')
+    } finally {
       setLoading(false)
     }
   }
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit()
+  const handleContinue = () => {
+    if (!pendingData) return
+    onComplete(pendingData, { user: submittedText, assistant: reply })
+  }
+
+  if (submittedText && reply) {
+    return (
+      <div className="chat-thread">
+        <div className="chat-bubble user-bubble">{submittedText}</div>
+        <div className="chat-bubble assistant-bubble">
+          <p>{reply}</p>
+          <p className="chat-hint">💡 <em>Understanding your context, not just keywords</em></p>
+        </div>
+        <div className="chat-cta">
+          <button className="btn-primary" onClick={handleContinue}>
+            Continue conversation →
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div style={{ textAlign: 'center', paddingTop: 32 }}>
-      <div className="hero-icon">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
-          stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <path d="M16 10a4 4 0 01-8 0" />
-        </svg>
+    <div className="chat-thread">
+      <div className="chat-bubble assistant-bubble">
+        <p>Hi! Tell me what you're trying to figure out — a frustration, a goal, or just a vague need. I'll help you make sense of it.</p>
+        <p className="chat-hint">💡 <em>The more context you give, the better I can help.</em></p>
       </div>
-
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 12 }}>
-        AI Shopping Assistant
-      </h1>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 16, marginBottom: 32, lineHeight: 1.6 }}>
-        Tell me what you need, what matters to you,<br />
-        or what problem you&apos;re trying to solve
-      </p>
 
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="I need a water bottle for the gym..."
-        rows={4}
-        style={{ marginBottom: 16 }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit()
+        }}
+        placeholder="e.g. I cook almost every day but my phone screen is too small to follow recipes…"
+        rows={3}
         autoFocus
       />
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+      <div className="chat-cta">
         <button
           className="btn-primary"
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={!text.trim() || loading}
         >
-          {loading ? <LoadingDots /> : 'Find my matches →'}
+          {loading ? <LoadingDots /> : 'Start the conversation →'}
         </button>
-        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-          ⌘ + Enter to submit
-        </span>
       </div>
 
-      {error && (
-        <p style={{ color: '#ef4444', marginTop: 16, fontSize: 14 }}>{error}</p>
-      )}
+      <div className="sample-row">
+        <span className="sample-label">Or try a sample:</span>
+        {SAMPLE_PROMPTS.map((p, i) => (
+          <button
+            key={i}
+            className="sample-chip"
+            onClick={() => { setText(p); handleSubmit(p) }}
+            disabled={loading}
+          >
+            {['Cooking', 'Gym', 'Organizing'][i]}
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="error-msg">{error}</p>}
     </div>
   )
 }

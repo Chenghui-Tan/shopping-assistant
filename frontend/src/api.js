@@ -28,3 +28,9 @@ export const getRecommendations = (sessionId) =>
 
 export const refineRecommendations = (sessionId, text) =>
   post('/session/refine', { session_id: sessionId, text })
+
+export const getLifecycle = async (sessionId) => {
+  const res = await fetch(`${BASE}/session/${sessionId}/lifecycle`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
