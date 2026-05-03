@@ -37,6 +37,22 @@ Keep existing codebase. The recommendation engine, FastAPI routes, Claude client
 | 6+ | Adversarial critique → fix lowest-scoring goal | `CRITIQUE.md`, follow-up commits |
 | Final | HANDOFF.md | summary + open items |
 
+## Second iteration loop (2026-05-02 — A through E)
+
+Triggered by user request to keep iterating + fill missing data. All five
+iterations committed individually; see git log.
+
+| Iter | Subject | Outcome |
+|---|---|---|
+| A | Backfill missing data (72 delivery, 100 description, 2 rating) | All 100 rows complete; provenance flags added; engine finds richer rule matches |
+| B | Personalise lifecycle | 10 distinct dashboards across 3 categories — verified |
+| C | Preference continuity | Diff card per refine turn; 3-turn history; HUMAN_KEY copy |
+| D | Contextual replies + chip pre-fill | 8 use-case-aware replies; reverse-mapped chip pre-fill from inferred prefs |
+| E | Save-for-later persistence + report v3 | Toggle endpoint, per-session list, counter pill, heart UI; report v3 = 21 pp / 41k chars; ppt v3 |
+
+After each iteration: backend tests run (27/27), frontend build verified
+clean (~220 KB JS).
+
 ## Decisions made (no user available)
 
 - **Adapt, don't rebuild**: existing code is solid; I'm adding scenes, not throwing it out. Will note this in CRITIQUE.md.
