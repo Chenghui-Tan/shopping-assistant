@@ -151,9 +151,18 @@ def infer_features(product: dict[str, Any]) -> dict[str, bool]:
 # ---------------------------------------------------------------------------
 
 def load_products() -> list[dict[str, Any]]:
-    """Load the cleaned product dataset from disk."""
+    """Load the cleaned product dataset from disk and enrich every row
+    with decision-relevant attributes (screen size, ecosystem, camera,
+    capacity) extracted from the title at load time. Keeps the JSON
+    on-disk minimal while making the engine and frontend share one
+    source of truth for these attributes.
+    """
+    from attributes import extract_all  # local import to avoid cycle
     with open(DATA_PATH, encoding="utf-8") as f:
-        return json.load(f)
+        rows = json.load(f)
+    for r in rows:
+        r.update(extract_all(r))
+    return rows
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +198,11 @@ def filter_products(
     category  = _resolve_category(preferences)
     price_max = _coerce_numeric(preferences.get("price_max"))
     delivery_max = _coerce_numeric(preferences.get("delivery_days_max"))
+    # Privacy is a hard filter: when the user explicitly says 'no camera',
+    # we drop any product known to have one. Products with unknown camera
+    # status (has_camera == None) get the benefit of the doubt — same
+    # pattern as missing delivery data.
+    no_camera_required = preferences.get("privacy_camera") == "no_camera"
 
     result = []
     for p in products:
@@ -205,6 +219,9 @@ def filter_products(
             days = p.get("arrival_time_days")
             if days is not None and days > delivery_max:
                 continue
+
+        if no_camera_required and p.get("has_camera") is True:
+            continue
 
         result.append(p)
     return result
@@ -297,6 +314,56 @@ def _score_smart_display(
     # _pref_has so each picked use case independently lights up its rules.
     score = 0.0
     matches: list[str] = []
+
+    # Pull extracted attributes (populated by attributes.extract_all()
+    # at load time). Missing values stay None and the rule simply doesn't
+    # fire — no fabricated defaults.
+    screen      = product.get("screen_inches")
+    ecosystems  = product.get("ecosystems") or []
+    has_camera  = product.get("has_camera")
+    mounting    = product.get("mounting") or []
+
+    # ---- New decision-relevant rules -----------------------------------------
+
+    # Voice ecosystem match — the strongest non-budget filter. If the user
+    # picked Alexa and the product talks Alexa, big +0.10. If they picked
+    # Apple and we don't see Apple, soft penalty since it's a hard miss.
+    eco_pref = preferences.get("voice_ecosystem")
+    if eco_pref and eco_pref != "none":
+        score = _apply_rule(score, matches, eco_pref in ecosystems,
+                            f"ecosystem_{eco_pref}", penalty=_SOFT_PENALTY)
+
+    # Placement filter — wall mount only matters when user picked it.
+    placement = preferences.get("placement")
+    if placement == "wall":
+        score = _apply_rule(score, matches, "wall" in mounting, "wall_mountable",
+                            penalty=_SOFT_PENALTY)
+    elif placement == "kitchen":
+        # Kitchen prefers something that won't dominate the counter.
+        if screen is not None:
+            score = _apply_rule(score, matches, screen <= 11.0, "kitchen_friendly_size")
+
+    # Screen size priority — explicit user signal beats use_case heuristics.
+    size_pref = preferences.get("screen_size_priority")
+    if size_pref == "compact" and screen is not None:
+        score = _apply_rule(score, matches, screen <= 8.0, "compact_screen",
+                            penalty=_SOFT_PENALTY)
+    elif size_pref == "mid" and screen is not None:
+        score = _apply_rule(score, matches, 8.0 <= screen <= 11.0, "mid_screen",
+                            penalty=_SOFT_PENALTY)
+    elif size_pref == "large" and screen is not None:
+        score = _apply_rule(score, matches, screen >= 15.0, "large_screen_pref",
+                            penalty=_SOFT_PENALTY)
+
+    # Privacy: penalise products with cameras when user said no.
+    privacy = preferences.get("privacy_camera")
+    if privacy == "no_camera":
+        # has_camera == False is a positive match; True is a soft miss;
+        # None (unknown) gets neither.
+        if has_camera is False:
+            score = _apply_rule(score, matches, True, "no_camera_match")
+        elif has_camera is True:
+            score -= _SOFT_PENALTY * 2  # stronger penalty: privacy is a hard pref
 
     if _pref_has(preferences, "use_case", "cooking"):
         # Voice control is critical for hands-free cooking — penalise its absence
@@ -570,6 +637,129 @@ def _try_ranked(
     """
     ranked = rank_products(filter_products(products, preferences), preferences)
     return ranked[:top_n] if len(ranked) >= _MIN_RESULTS else None
+
+
+def _is_real_display(p: dict[str, Any]) -> bool:
+    """True for actual smart displays (not picture frames or sensors).
+
+    Reads rule_matches under either the engine's underscore-prefixed
+    name or the API-formatted name so this works with both raw ranker
+    output and route-formatted products.
+    """
+    rules = p.get("_category_rule_matches") or p.get("rule_matches") or []
+    feats = p.get("_inferred_features") or p.get("features") or {}
+    return ("display_device" in rules
+            and (feats.get("voice_control")
+                 or bool(p.get("ecosystems"))))
+
+
+def curated_picks(
+    ranked: list[dict[str, Any]],
+    category: str | None,
+) -> list[dict[str, Any]]:
+    """Return up to three differentiated picks from a ranked list.
+
+    The shape is always: Best Fit, Budget Pick, Stretch Pick. Each pick
+    carries a `pick_label` and `pick_reason` so the frontend can render
+    badges without re-deriving the differentiation. The "Stretch" pick
+    is category-specific:
+        smart_display    -> Large Screen Pick
+        water_bottle     -> Large Capacity Pick
+        kitchen_organizer-> Best Visibility Pick
+
+    De-duplicates by product_url so the same item never appears twice
+    on the picks page.
+    """
+    if not ranked:
+        return []
+
+    picks: list[dict[str, Any]] = []
+    used: set[str] = set()
+
+    def add(p: dict, label: str, reason: str) -> None:
+        url = p.get("product_url") or p.get("title", "")
+        if url in used:
+            return
+        used.add(url)
+        picks.append({**p, "pick_label": label, "pick_reason": reason})
+
+    # 1. Best Fit — highest combined score that survived the strict filter.
+    best = ranked[0]
+    add(best, "Best Fit", "Highest match score across all your stated preferences.")
+
+    # Build a "comparable" pool — products that share the best fit's
+    # category-defining traits. For smart displays that means actual
+    # smart displays (not picture frames with screens). This prevents
+    # the Budget Pick from offering a sensor and the Stretch Pick from
+    # offering a picture frame.
+    if category == "smart_display":
+        comparable = [p for p in ranked if _is_real_display(p)] or ranked
+    else:
+        comparable = ranked
+
+    # 2. Budget Pick — cheapest comparable product. Skip the top
+    #    candidate (don't repeat Best Fit) and require it to score
+    #    within 25% of the top score so we don't suggest something
+    #    objectively worse just because it's cheap.
+    top_score = best.get("_score") or 0.0
+    score_floor = top_score * 0.75
+    budget_pool = sorted(
+        [p for p in comparable
+         if p.get("product_url") != best.get("product_url")
+         and (p.get("_score") or 0.0) >= score_floor],
+        key=lambda p: p.get("price") or 1e9,
+    )
+    if budget_pool:
+        cand = budget_pool[0]
+        if cand.get("price") is not None and best.get("price") is not None:
+            saving = best["price"] - cand["price"]
+            if saving >= 5:
+                reason = (f"${cand['price']:.0f} — saves ${saving:.0f} vs the best fit "
+                          "while still scoring near the top.")
+            else:
+                reason = (f"${cand['price']:.0f} — comparable in price to the best fit "
+                          "but worth a look as a runner-up.")
+            add(cand, "Budget Pick", reason)
+
+    # 3. Stretch pick — category-specific. Pulls from the *full*
+    #    comparable pool (so a real smart display with a 15"+ screen
+    #    can still surface even if user picked a 'mid' size preference).
+    stretch = None
+    stretch_reason = ""
+    label = ""
+    if category == "smart_display":
+        with_screen = [p for p in comparable if p.get("screen_inches")]
+        if with_screen:
+            cand = max(with_screen, key=lambda p: p["screen_inches"])
+            # Only show the stretch if it's meaningfully larger than Best Fit.
+            if (best.get("screen_inches") or 0) + 2 <= cand.get("screen_inches", 0):
+                stretch = cand
+                stretch_reason = (f'{cand["screen_inches"]:.1f}" screen — '
+                                  "easier to follow recipes from across the kitchen.")
+                label = "Large Screen Pick"
+    elif category == "water_bottle":
+        with_oz = [p for p in comparable if p.get("capacity_oz")]
+        if with_oz:
+            cand = max(with_oz, key=lambda p: p["capacity_oz"])
+            if (best.get("capacity_oz") or 0) + 8 <= cand.get("capacity_oz", 0):
+                stretch = cand
+                stretch_reason = (f"{cand['capacity_oz']}oz capacity — fewer refills "
+                                  "for long workouts or trips.")
+                label = "Large Capacity Pick"
+    elif category == "kitchen_organizer":
+        vis = [p for p in comparable
+               if any(kw in (p.get("title") or "").lower()
+                      for kw in ["clear", "compartment", "drawer", "transparent"])]
+        if vis:
+            stretch = max(vis, key=lambda p: p.get("rating") or 0)
+            stretch_reason = ("Clear / compartmented build — every item visible "
+                              "and reachable at a glance.")
+            label = "Best Visibility Pick"
+
+    if stretch is not None and label and stretch.get("product_url") not in used:
+        add(stretch, label, stretch_reason)
+
+    return picks
 
 
 def recommend_with_relaxation(

@@ -42,20 +42,42 @@ QUESTION_SEQUENCES: dict[str, list[dict]] = {
         },
     ],
     "smart_display": [
+        # Multi-select on use_case captures what the screen has to be good at.
         {
             "key": "use_case",
             "text": "What's the main thing you'll use it for?",
             "chips": ["Cooking", "Family calendar", "Entertainment", "Smart home control"],
         },
+        # Ecosystem question is one of the strongest filters: an Apple
+        # household isn't going to be happy with an Echo, full stop.
+        {
+            "key": "voice_ecosystem",
+            "text": "Do you already use a voice ecosystem?",
+            "chips": ["Alexa", "Google", "Apple", "I'm new to this"],
+        },
+        # Where it lives drives mounting and screen-size sanity.
+        {
+            "key": "placement",
+            "text": "Where will it live?",
+            "chips": ["Kitchen counter", "Wall mount", "Living room", "Bedroom"],
+        },
+        # Decisive for cooking specifically — readability vs counter footprint.
+        {
+            "key": "screen_size_priority",
+            "text": "How big does the screen need to be?",
+            "chips": ["Compact (under 8\")", "Mid (8–11\")", "Large (15\"+)",
+                      "Doesn't matter"],
+        },
+        # Privacy is the single most-asked follow-up about Echo Shows.
+        {
+            "key": "privacy_camera",
+            "text": "Any privacy preference about the camera?",
+            "chips": ["Camera is fine", "Prefer no camera", "Doesn't matter"],
+        },
         {
             "key": "price_max",
             "text": "What's your budget?",
-            "chips": ["Under $50", "Under $100", "Under $150", "No limit"],
-        },
-        {
-            "key": "delivery_days_max",
-            "text": "How soon do you need it?",
-            "chips": ["ASAP (1–2 days)", "This week", "No rush"],
+            "chips": ["Under $100", "Under $150", "Under $250", "No limit"],
         },
     ],
 }
@@ -108,7 +130,31 @@ CHIP_TO_VALUE: dict[str, dict[str, Any]] = {
         "Under $50": 50,
         "Under $100": 100,
         "Under $150": 150,
+        "Under $250": 250,
         "No limit": None,
+    },
+    "voice_ecosystem": {
+        "Alexa":             "alexa",
+        "Google":            "google",
+        "Apple":             "apple",
+        "I'm new to this":   "none",
+    },
+    "placement": {
+        "Kitchen counter":   "kitchen",
+        "Wall mount":        "wall",
+        "Living room":       "living_room",
+        "Bedroom":           "bedroom",
+    },
+    "screen_size_priority": {
+        "Compact (under 8\")": "compact",
+        "Mid (8–11\")":         "mid",
+        "Large (15\"+)":        "large",
+        "Doesn't matter":       "any",
+    },
+    "privacy_camera": {
+        "Camera is fine":     "ok",
+        "Prefer no camera":   "no_camera",
+        "Doesn't matter":     "any",
     },
     "delivery_days_max": {
         "ASAP (1–2 days)": 2,

@@ -127,6 +127,16 @@ def _format_product(p: dict, explanation: str) -> dict:
         "rule_matches": p.get("_category_rule_matches", []),
         "features": {k: v for k, v in (p.get("_inferred_features") or {}).items() if v},
         "score": p.get("_score"),
+        # Decision-relevant attributes extracted at load time. Frontend
+        # uses these for the comparison view + ProductCard chips.
+        "screen_inches": p.get("screen_inches"),
+        "ecosystems":    p.get("ecosystems"),
+        "has_camera":    p.get("has_camera"),
+        "mounting":      p.get("mounting"),
+        "capacity_oz":   p.get("capacity_oz"),
+        # Pick metadata (only present on /session/curated).
+        "pick_label":    p.get("pick_label"),
+        "pick_reason":   p.get("pick_reason"),
     }
 
 
@@ -288,7 +298,33 @@ def recommend(body: RecommendBody):
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
     products, relaxation = _run_recommendations(s)
-    return {"products": products, "relaxation": relaxation}
+    # Build the 3-card curated picks alongside the full ranking.
+    # Frontend Stage 3 leads with the picks; the full list is collapsed
+    # below as "all options".
+    raw_ranked = [
+        {**p, **{k: v for k, v in p.items() if k not in ("explanation",)}}
+        for p in products
+    ]
+    picks_raw = engine.curated_picks(raw_ranked, s["category"])
+    # Re-format picks the same way as products (preserves pick_label/reason).
+    picks = []
+    for p in picks_raw:
+        # Find the matching products list entry to preserve its explanation.
+        match = next(
+            (pp for pp in products if pp["product_url"] == p.get("product_url")),
+            None,
+        )
+        if match:
+            picks.append({
+                **match,
+                "pick_label":  p.get("pick_label"),
+                "pick_reason": p.get("pick_reason"),
+            })
+    return {
+        "products":   products,
+        "picks":      picks,
+        "relaxation": relaxation,
+    }
 
 
 @app.post("/session/refine")
