@@ -77,10 +77,56 @@ function LoadingDots() {
   return <span className="loading-dots"><span /><span /><span /></span>
 }
 
+// Reverse the backend's CHIP_TO_VALUE map for the chip groups we know about.
+// Used to pre-select chips when the LLM pre-filled preferences from the
+// raw text — instead of asking the user to repeat what Claude already heard.
+const VALUE_TO_CHIP = {
+  use_case: {
+    cooking: 'Cooking', family: 'Family calendar',
+    entertainment: 'Entertainment', smart_home: 'Smart home control',
+    gym: 'Gym', daily: 'Daily carry', outdoor: 'Outdoor', kids: 'Kids',
+  },
+  use_area:    { cabinet: 'Cabinets', countertop: 'Countertop', under_sink: 'Under the sink' },
+  pain_point:  { not_enough_space: 'Not enough space', hard_to_find_things: 'Hard to find things' },
+  structure_type: {
+    stackable: 'Stackable', drawer: 'Drawer', bin: 'Bin',
+    expandable: 'Expandable', lazy_susan: 'Lazy Susan',
+  },
+  insulated:        { true: 'Yes, insulated', false: "No, doesn't matter" },
+  size_preference:  { lightweight: 'Lightweight', large: 'Large capacity', '': 'No preference' },
+  price_max:        { 50: 'Under $50', 100: 'Under $100', 150: 'Under $150', null: 'No limit' },
+  delivery_days_max: { 2: 'ASAP (1–2 days)', 7: 'This week', null: 'No rush' },
+}
+
+function chipFromValue(qKey, v) {
+  if (v === undefined || v === null) return undefined
+  // Booleans and numbers need string-keyed lookup against VALUE_TO_CHIP.
+  const map = VALUE_TO_CHIP[qKey]
+  if (!map) return undefined
+  if (Array.isArray(v)) return v.map((x) => map[x]).filter(Boolean)
+  return map[v]
+}
+
 export default function Stage2({ sessionId, startData, openingTurn, onComplete }) {
   const [category, setCategory] = useState(startData?.category || null)
   const [pickingCategory, setPickingCategory] = useState(!startData?.category)
-  const [answers, setAnswers] = useState({})
+
+  // Pre-fill chip selections from any preferences the LLM already inferred
+  // in /session/start. Matches structured values back to chip labels via
+  // VALUE_TO_CHIP. Anything we can't reverse-map is silently dropped — the
+  // user just answers that question fresh.
+  const initialAnswers = (() => {
+    const acc = {}
+    const prefs = startData?.preferences || {}
+    for (const [k, v] of Object.entries(prefs)) {
+      const chip = chipFromValue(k, v)
+      if (chip !== undefined && chip !== null && (Array.isArray(chip) ? chip.length > 0 : true)) {
+        acc[k] = chip
+      }
+    }
+    return acc
+  })()
+  const [answers, setAnswers] = useState(initialAnswers)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const submitted = useRef(false)

@@ -151,6 +151,53 @@ def _run_recommendations(session: dict) -> tuple[list[dict], str]:
 
 # --- Routes ---
 
+def _empathic_reply(category: str, prefs: dict, raw: str) -> str:
+    """Build a contextual reply that references what the user actually said.
+
+    Uses inferred preferences if Claude provided them — otherwise falls
+    back to a category-default. Replaces the prior 4-string lookup that
+    ignored every detail the user typed.
+    """
+    use_case = prefs.get("use_case")
+    if isinstance(use_case, list):
+        use_case = use_case[0] if use_case else None
+
+    if category == "smart_display":
+        if use_case == "cooking":
+            return ("That sounds frustrating — cooking with one eye on a tiny phone screen "
+                    "is no way to follow a recipe. Let's find a display that can guide you "
+                    "hands-free in the kitchen.")
+        if use_case == "family":
+            return ("A shared family display can save a lot of group-chat back-and-forth. "
+                    "Let's find one that handles calendar, reminders, and quick messages.")
+        if use_case == "entertainment":
+            return ("Got it — you want a screen that's enjoyable to use, not just functional. "
+                    "Let's find one with strong streaming + voice support.")
+        if use_case == "smart_home":
+            return ("A smart-home hub really does change how a home feels. Let's find one "
+                    "that talks to your existing devices and centralises voice control.")
+        return "That sounds frustrating. Want a larger screen that can guide you hands-free?"
+
+    if category == "water_bottle":
+        if use_case == "gym":
+            return ("Gym bottles either keep up with you or actively get in the way — let's "
+                    "find one that's lightweight, leak-proof, and keeps drinks cold for hours.")
+        if use_case == "outdoor":
+            return ("For outdoor use the bottle has to earn its place in your bag. Let's find "
+                    "one with capacity for long stretches and insulation that holds up.")
+        if use_case == "kids":
+            return ("Kids' bottles need to be light, drop-proof, and easy to clean. Let's find "
+                    "ones they'll actually carry without complaining.")
+        return ("I hear you — the right bottle should disappear into your routine. Let's narrow "
+                "it down quickly.")
+
+    if category == "kitchen_organizer":
+        return ("Mornings should be calm, not stressful. Let's find organisers that make every "
+                "utensil and ingredient easy to grab.")
+
+    return "That sounds frustrating. Let's figure out what would actually make this easier."
+
+
 @app.post("/session/start")
 def start_session(body: StartBody):
     # Best-effort LLM parse. If the API key is a placeholder or the call fails
@@ -167,6 +214,10 @@ def start_session(body: StartBody):
     if category == "unknown" or not category:
         category = ""
 
+    # Strip null-valued keys so the frontend's pre-fill logic isn't confused
+    # by the LLM returning {"insulated": null, "size_preference": null, …}.
+    preferences = {k: v for k, v in preferences.items() if v not in (None, "")}
+
     s = session_store.create_session(body.text, category, preferences)
 
     if not category:
@@ -175,6 +226,8 @@ def start_session(body: StartBody):
             "category": None,
             "next_question": None,
             "chips": CATEGORY_CHIPS,
+            "preferences": preferences,
+            "reply": _empathic_reply("", preferences, body.text),
         }
 
     return {
@@ -182,6 +235,8 @@ def start_session(body: StartBody):
         "category": category,
         "next_question": _next_question(s),
         "chips": None,
+        "preferences": preferences,
+        "reply": _empathic_reply(category, preferences, body.text),
     }
 
 

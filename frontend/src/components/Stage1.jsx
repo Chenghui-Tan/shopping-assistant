@@ -7,6 +7,9 @@ const SAMPLE_PROMPTS = [
   "My kitchen drawers are a mess — I waste time every morning hunting for the right utensil and the cabinets feel chaotic.",
 ]
 
+// Frontend fallback only — backend now returns a contextual reply via
+// `data.reply` that references the user's inferred use_case. This map is
+// the safety net for the rare case where the backend fails to populate it.
 const FALLBACK_REPLIES = {
   smart_display: "That sounds frustrating. Would you like a larger screen that can guide you hands-free while cooking and help manage your meals more easily?",
   water_bottle: "I hear you — that's a real pain. Want a lightweight, leak-proof bottle that keeps drinks cold and is easy to track on the go?",
@@ -35,8 +38,10 @@ export default function Stage1({ onComplete }) {
       const data = await startSession(value)
       setSubmittedText(value)
       setPendingData(data)
+      // Prefer the backend's contextual reply; fall back per-category only
+      // if the backend didn't supply one (older deploys).
       const cat = data.category || 'default'
-      setReply(FALLBACK_REPLIES[cat] || FALLBACK_REPLIES.default)
+      setReply(data.reply || FALLBACK_REPLIES[cat] || FALLBACK_REPLIES.default)
     } catch (e) {
       setError('Could not start the conversation. Please try again.')
     } finally {
