@@ -265,80 +265,261 @@ def refine(body: RefineBody):
     }
 
 
-# Lifecycle data for Scene 5 — keyed per category. Mock data so the
-# post-purchase view always renders in the demo without requiring real
-# integrations (calendar, smart home, etc.).
-LIFECYCLE_DATA = {
-    "smart_display": {
-        "header": "Kitchen Display",
-        "schedule": [
-            {"time": "9:00 AM",  "label": "Soccer practice — Emma"},
-            {"time": "2:00 PM",  "label": "Grocery delivery"},
+# Lifecycle dashboard for Scene 5. Content is derived from the user's
+# elicited preferences, not just their category — so a single user shopping
+# for a smart display does NOT see "Soccer practice — Emma".
+#
+# Each helper returns the same shape: {header, schedule, menu, video, cards}.
+# Helpers can branch on any preference the user actually picked; an empty
+# branch falls back to the safest universal copy for that category.
+
+def _has(prefs: dict, key: str, *values: str) -> bool:
+    """OR-membership across single-value or list-typed prefs."""
+    raw = prefs.get(key)
+    if not raw:
+        return False
+    target = set(values)
+    if isinstance(raw, list):
+        return any(v in target for v in raw)
+    return raw in target
+
+
+def _smart_display_lifecycle(prefs: dict) -> dict:
+    is_family       = _has(prefs, "use_case", "family")
+    is_cooking      = _has(prefs, "use_case", "cooking")
+    is_entertain    = _has(prefs, "use_case", "entertainment")
+    is_smart_home   = _has(prefs, "use_case", "smart_home")
+
+    if is_family:
+        header = "Kitchen Display — Family"
+        schedule = [
+            {"time": "9:00 AM",  "label": "Kids' activity drop-off"},
+            {"time": "2:00 PM",  "label": "Grocery delivery window"},
             {"time": "6:00 PM",  "label": "Family dinner"},
-        ],
-        "menu": [
-            {"meal": "Breakfast", "label": "Greek yogurt & granola"},
-            {"meal": "Lunch",     "label": "Chicken salad wrap"},
-            {"meal": "Dinner",    "label": "Teriyaki salmon bowl"},
-        ],
-        "video": {"title": "Cooking show: Quick weeknight meals",
-                  "subtitle": "Watch while preparing dinner"},
-        "cards": [
-            {"icon": "🍴",  "title": "Meal Planning",
-             "body": "Track nutrition, plan meals ahead, and generate shopping lists automatically."},
+        ]
+    elif is_entertain and not is_cooking:
+        header = "Living-Room Display"
+        schedule = [
+            {"time": "Now",      "label": "Continue last show"},
+            {"time": "8:00 PM",  "label": "New episode reminder"},
+            {"time": "Later",    "label": "Sync to TV — Netflix queue"},
+        ]
+    elif is_smart_home:
+        header = "Smart-Home Hub"
+        schedule = [
+            {"time": "7:00 AM",  "label": "Lights on — kitchen + entry"},
+            {"time": "Sunset",   "label": "Auto-dim living room"},
+            {"time": "11:00 PM", "label": "Lock + thermostat night mode"},
+        ]
+    else:  # cooking-only or unspecified
+        header = "Kitchen Display"
+        schedule = [
+            {"time": "8:00 AM",  "label": "Today's meal plan"},
+            {"time": "12:30 PM", "label": "Lunch prep timer"},
+            {"time": "6:30 PM",  "label": "Dinner recipe walkthrough"},
+        ]
+
+    menu = ([
+        {"meal": "Breakfast", "label": "Greek yogurt & granola"},
+        {"meal": "Lunch",     "label": "Chicken salad wrap"},
+        {"meal": "Dinner",    "label": "Teriyaki salmon bowl"},
+    ] if is_cooking or is_family else [
+        {"meal": "Today",   "label": "No menu items added yet"},
+        {"meal": "Tip",     "label": "Tap to enable meal planning"},
+        {"meal": "Tonight", "label": "Free time — no scheduled cook"},
+    ])
+
+    if is_cooking:
+        video = {"title": "Cooking show: Quick weeknight meals",
+                 "subtitle": "Watch while preparing dinner"}
+    elif is_entertain:
+        video = {"title": "Trending: Top streaming pick of the week",
+                 "subtitle": "Continue where you left off"}
+    elif is_smart_home:
+        video = {"title": "Tip: Voice routines you haven't set up",
+                 "subtitle": "3-min walkthrough"}
+    else:
+        video = {"title": "Setup: Make this display yours in 5 minutes",
+                 "subtitle": "Quick personalisation walkthrough"}
+
+    cards = []
+    if is_cooking:
+        cards.append({"icon": "🍴", "title": "Meal Planning",
+                      "body": "Track nutrition, plan meals, and generate shopping lists automatically."})
+    if is_family:
+        cards.append({"icon": "👨‍👩‍👧", "title": "Family Hub",
+                      "body": "Sync schedules, leave messages, and coordinate family activities in one place."})
+    if is_entertain:
+        cards.append({"icon": "🎬", "title": "Entertainment",
+                      "body": "Cooking shows, video recipes, and music during meal prep."})
+    if is_smart_home:
+        cards.append({"icon": "💡", "title": "Smart-Home Routines",
+                      "body": "Voice-control lights, locks, thermostat, and one-tap morning/evening scenes."})
+    # Always show at least three cards so the layout doesn't collapse.
+    if len(cards) < 3:
+        for fallback in [
+            {"icon": "🍴", "title": "Meal Planning",
+             "body": "Track nutrition, plan meals, and generate shopping lists automatically."},
             {"icon": "👨‍👩‍👧", "title": "Family Hub",
              "body": "Sync schedules, leave messages, and coordinate family activities in one place."},
-            {"icon": "🎬",  "title": "Entertainment",
-             "body": "Watch cooking shows, follow video recipes, or enjoy music during meal prep."},
-        ],
-    },
-    "water_bottle": {
-        "header": "Daily Hydration",
-        "schedule": [
+            {"icon": "🎬", "title": "Entertainment",
+             "body": "Cooking shows, video recipes, and music during meal prep."},
+        ]:
+            if fallback["title"] not in {c["title"] for c in cards}:
+                cards.append(fallback)
+            if len(cards) >= 3:
+                break
+
+    return {"header": header, "schedule": schedule, "menu": menu,
+            "video": video, "cards": cards[:3]}
+
+
+def _water_bottle_lifecycle(prefs: dict) -> dict:
+    is_gym     = _has(prefs, "use_case", "gym")
+    is_daily   = _has(prefs, "use_case", "daily")
+    is_outdoor = _has(prefs, "use_case", "outdoor")
+    is_kids    = _has(prefs, "use_case", "kids")
+
+    if is_gym:
+        header   = "Gym & Hydration"
+        schedule = [
             {"time": "7:00 AM",  "label": "Morning workout — 32oz before"},
             {"time": "12:30 PM", "label": "Refill at lunch"},
             {"time": "5:00 PM",  "label": "Evening run"},
-        ],
-        "menu": [
-            {"meal": "Goal",      "label": "100 oz / day"},
-            {"meal": "Reminder",  "label": "Sip every 20 minutes"},
-            {"meal": "Tonight",   "label": "Lemon-mint infusion"},
-        ],
-        "video": {"title": "Workout reminder: Hydrate before, during, after",
-                  "subtitle": "Coaching tips synced to your run"},
-        "cards": [
-            {"icon": "💧", "title": "Hydration Tracker",
-             "body": "Log every refill; the assistant nudges you when you're falling behind your goal."},
-            {"icon": "🏃", "title": "Workout Companion",
-             "body": "Sync sessions and remind you to top up before, during, and after each workout."},
-            {"icon": "🍋", "title": "Flavor Ideas",
-             "body": "Rotate through citrus, herbal, and electrolyte recipes so plain water never gets boring."},
-        ],
-    },
-    "kitchen_organizer": {
-        "header": "Organized Kitchen",
-        "schedule": [
-            {"time": "Mon",  "label": "Pantry restock — check bins"},
-            {"time": "Wed",  "label": "Wipe down lazy susan"},
-            {"time": "Sat",  "label": "Weekly grocery run"},
-        ],
-        "menu": [
-            {"meal": "Cabinet",   "label": "Stackable bins — clear"},
-            {"meal": "Drawer",    "label": "Flatware tray — sorted"},
-            {"meal": "Counter",   "label": "Spice lazy susan — visible"},
-        ],
-        "video": {"title": "Kitchen reset: 10-minute weekly tidy",
-                  "subtitle": "A simple routine to keep everything findable"},
-        "cards": [
-            {"icon": "🗂️", "title": "Stay Organized",
-             "body": "Get gentle weekly nudges to reset bins, drawers, and the lazy susan in 10 minutes."},
-            {"icon": "🛒", "title": "Smart Restock",
-             "body": "Track what's running low and feed it into your shopping list automatically."},
-            {"icon": "✨", "title": "Calm Counters",
-             "body": "Keep the everyday items visible and the rest tucked away — fewer decisions, faster cooking."},
-        ],
-    },
-}
+        ]
+        video    = {"title": "Workout reminder: Hydrate before, during, after",
+                    "subtitle": "Coaching tips synced to your run"}
+    elif is_outdoor:
+        header   = "Outdoor & Trail"
+        schedule = [
+            {"time": "Pre-trip", "label": "Fill 64oz; freeze half overnight"},
+            {"time": "On trail", "label": "Sip every 20 min — stay ahead of thirst"},
+            {"time": "Return",   "label": "Rinse, air-dry, restock"},
+        ]
+        video    = {"title": "Trail tips: Carry capacity vs weight",
+                    "subtitle": "How much water for an 8-hour hike"}
+    elif is_kids:
+        header   = "Kids' Hydration"
+        schedule = [
+            {"time": "8:00 AM",  "label": "Pack with breakfast — fill at the bus stop"},
+            {"time": "12:00 PM", "label": "Lunchtime refill at school"},
+            {"time": "5:30 PM",  "label": "After-school sport — sip every 20 min"},
+        ]
+        video    = {"title": "Kid-friendly hydration without the sugar",
+                    "subtitle": "Simple flavours that get them drinking water"}
+    else:  # daily / default
+        header   = "Daily Hydration"
+        schedule = [
+            {"time": "Morning",  "label": "Start with a full bottle on the desk"},
+            {"time": "Midday",   "label": "Refill before lunch"},
+            {"time": "Evening",  "label": "Top off; reduce caffeine"},
+        ]
+        video    = {"title": "How much water do you actually need?",
+                    "subtitle": "Evidence-based daily targets"}
+
+    menu = [
+        {"meal": "Goal",     "label": "100 oz / day" if not is_kids else "60 oz / day"},
+        {"meal": "Reminder", "label": "Sip every 20 minutes"},
+        {"meal": "Tonight",  "label": "Lemon-mint infusion" if not is_kids else "Sliced strawberries in water"},
+    ]
+
+    cards = [
+        {"icon": "💧", "title": "Hydration Tracker",
+         "body": "Log every refill; nudges you when you're falling behind your goal."},
+    ]
+    if is_gym:
+        cards.append({"icon": "🏃", "title": "Workout Companion",
+                      "body": "Sync sessions and remind you to top up before/during/after each workout."})
+    if is_outdoor:
+        cards.append({"icon": "🧭", "title": "Trip Planner",
+                      "body": "Estimate carry capacity for hikes; auto-tracks usage rate."})
+    if is_kids:
+        cards.append({"icon": "🎨", "title": "Kid Mode",
+                      "body": "Colour-coded refills, gentle reminders, and progress stickers."})
+    if len(cards) < 3:
+        cards.append({"icon": "🍋", "title": "Flavor Ideas",
+                      "body": "Citrus, herbal, and electrolyte rotations so plain water never gets boring."})
+    return {"header": header, "schedule": schedule, "menu": menu,
+            "video": video, "cards": cards[:3]}
+
+
+def _kitchen_organizer_lifecycle(prefs: dict) -> dict:
+    is_cabinet   = _has(prefs, "use_area", "cabinet")
+    is_counter   = _has(prefs, "use_area", "countertop")
+    is_undersink = _has(prefs, "use_area", "under_sink")
+    pain_space   = _has(prefs, "pain_point", "not_enough_space")
+    pain_find    = _has(prefs, "pain_point", "hard_to_find_things")
+
+    if is_cabinet:
+        header = "Cabinet Reset"
+        schedule = [
+            {"time": "Mon", "label": "Inventory: top shelf, then bottom"},
+            {"time": "Wed", "label": "Wipe down + repack stackable bins"},
+            {"time": "Sat", "label": "Weekly grocery run"},
+        ]
+    elif is_counter:
+        header = "Counter Routine"
+        schedule = [
+            {"time": "Daily",  "label": "Clear non-essentials at end of day"},
+            {"time": "Wed",    "label": "Wipe down lazy susan + spice rack"},
+            {"time": "Sat",    "label": "Restock visible counter items"},
+        ]
+    elif is_undersink:
+        header = "Under-Sink Reset"
+        schedule = [
+            {"time": "Mon",  "label": "Check bin contents — toss expired"},
+            {"time": "Wed",  "label": "Refill cleaning supplies"},
+            {"time": "Sat",  "label": "Quick wipe + dry"},
+        ]
+    else:
+        header = "Organised Kitchen"
+        schedule = [
+            {"time": "Mon", "label": "Pantry restock — check bins"},
+            {"time": "Wed", "label": "Wipe down lazy susan"},
+            {"time": "Sat", "label": "Weekly grocery run"},
+        ]
+
+    menu = [
+        {"meal": "Cabinet",   "label": "Stackable bins — clear"   if pain_space else "Layered shelves"},
+        {"meal": "Drawer",    "label": "Flatware tray — sorted"   if pain_find  else "Free-flow drawer"},
+        {"meal": "Counter",   "label": "Spice lazy susan — visible" if pain_find else "Daily-use only"},
+    ]
+
+    video = {"title": "Kitchen reset: 10-minute weekly tidy",
+             "subtitle": "A simple routine to keep everything findable"} if pain_find else {
+             "title":   "Maximise tight kitchens: vertical-space tricks",
+             "subtitle": "Compact ideas for small apartments"}
+
+    cards = [
+        {"icon": "🗂️", "title": "Stay Organised",
+         "body": "Gentle weekly nudges to reset bins, drawers, and the lazy susan in 10 minutes."},
+        {"icon": "🛒", "title": "Smart Restock",
+         "body": "Track what's running low and feed it into your shopping list automatically."},
+    ]
+    if pain_space:
+        cards.append({"icon": "📏", "title": "Space Saver",
+                      "body": "Suggestions when bins fill up — reorder before chaos returns."})
+    elif pain_find:
+        cards.append({"icon": "🔍", "title": "Findable Kitchen",
+                      "body": "Tap to label compartments; the assistant remembers where things live."})
+    else:
+        cards.append({"icon": "✨", "title": "Calm Counters",
+                      "body": "Keep everyday items visible and the rest tucked away."})
+    return {"header": header, "schedule": schedule, "menu": menu,
+            "video": video, "cards": cards[:3]}
+
+
+def _lifecycle_for(session: dict) -> dict:
+    cat = session["category"]
+    prefs = session["preferences"]
+    if cat == "smart_display":
+        return _smart_display_lifecycle(prefs)
+    if cat == "water_bottle":
+        return _water_bottle_lifecycle(prefs)
+    if cat == "kitchen_organizer":
+        return _kitchen_organizer_lifecycle(prefs)
+    # Unknown category — return the smart-display default.
+    return _smart_display_lifecycle(prefs)
 
 
 @app.get("/session/{session_id}/lifecycle")
@@ -346,5 +527,4 @@ def lifecycle(session_id: str):
     s = session_store.get_session(session_id)
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
-    data = LIFECYCLE_DATA.get(s["category"], LIFECYCLE_DATA["smart_display"])
-    return data
+    return _lifecycle_for(s)
