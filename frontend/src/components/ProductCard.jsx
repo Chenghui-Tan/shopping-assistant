@@ -64,12 +64,22 @@ function featureTags(product) {
   return tags.slice(0, 2)
 }
 
-export default function ProductCard({ product, onSelect }) {
+export default function ProductCard({ product, onSelect, isSaved, onToggleSave }) {
   const bullets = tileBullets(product)
   const tags = featureTags(product)
 
   return (
     <div className="product-tile" onClick={onSelect} role="button" tabIndex={0}>
+      {onToggleSave && (
+        <button
+          className={'tile-heart ' + (isSaved ? 'tile-heart-on' : '')}
+          onClick={(e) => { e.stopPropagation(); onToggleSave() }}
+          title={isSaved ? 'Remove from saved' : 'Save for later'}
+          aria-label={isSaved ? 'Saved' : 'Save for later'}
+        >
+          {isSaved ? '❤' : '♡'}
+        </button>
+      )}
       <div className="tile-image-wrap">
         {product.image_url ? (
           <img

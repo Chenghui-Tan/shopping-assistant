@@ -23,6 +23,8 @@ export default function Stage3({
   onSupplement,
   onSelectProduct,
   relaxation,
+  savedUrls,
+  onToggleSave,
 }) {
   if (!products || products.length === 0) {
     return (
@@ -57,6 +59,8 @@ export default function Stage3({
             key={product.product_url || i}
             product={product}
             onSelect={() => onSelectProduct(product)}
+            isSaved={savedUrls?.has(product.product_url) || false}
+            onToggleSave={() => onToggleSave?.(product)}
           />
         ))}
       </div>

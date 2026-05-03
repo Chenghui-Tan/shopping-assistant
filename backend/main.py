@@ -592,3 +592,25 @@ def lifecycle(session_id: str):
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
     return _lifecycle_for(s)
+
+
+class SaveBody(BaseModel):
+    session_id: str
+    product: dict
+
+
+@app.post("/session/save")
+def save(body: SaveBody):
+    s = session_store.get_session(body.session_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    saved = session_store.save_product(body.session_id, body.product)
+    return {"saved": saved, "count": len(saved)}
+
+
+@app.get("/session/{session_id}/saved")
+def get_saved(session_id: str):
+    s = session_store.get_session(session_id)
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"saved": s["saved"], "count": len(s["saved"])}

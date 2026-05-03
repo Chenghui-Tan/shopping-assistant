@@ -16,9 +16,33 @@ def create_session(raw_input: str, category: str, preferences: dict) -> dict:
         "answered": [],
         "recommendations": [],
         "supplement_log": [],
+        # Per-session list of products the user has bookmarked. Stored as
+        # a list of {product_url, title, price, image_url, saved_at}.
+        # Keyed by product_url since titles can change.
+        "saved": [],
     }
     _sessions[session_id] = session
     return session
+
+
+def save_product(session_id: str, product: dict) -> list:
+    """Toggle bookmark — add if not present, remove if it is.
+    Returns the updated saved list."""
+    s = _sessions[session_id]
+    saved = s["saved"]
+    url = product.get("product_url")
+    existing = next((i for i, p in enumerate(saved) if p["product_url"] == url), -1)
+    if existing >= 0:
+        saved.pop(existing)
+    else:
+        saved.append({
+            "product_url": url,
+            "title":       product.get("title"),
+            "price":       product.get("price"),
+            "image_url":   product.get("image_url"),
+            "saved_at":    datetime.now(timezone.utc).isoformat(),
+        })
+    return saved
 
 
 def get_session(session_id: str) -> dict | None:

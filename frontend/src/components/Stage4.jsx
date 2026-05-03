@@ -89,7 +89,7 @@ function deriveTradeoff(product) {
   return null
 }
 
-export default function Stage4({ product, onBack, onSeeLifecycle }) {
+export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onToggleSave }) {
   if (!product) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -161,7 +161,12 @@ export default function Stage4({ product, onBack, onSeeLifecycle }) {
         <button className="btn-primary" onClick={onSeeLifecycle}>
           See how it fits your daily life →
         </button>
-        <button className="btn-ghost-strong" onClick={onBack}>Save for later</button>
+        <button
+          className={'btn-ghost-strong ' + (isSaved ? 'btn-saved' : '')}
+          onClick={() => onToggleSave?.(product)}
+        >
+          {isSaved ? '❤ Saved' : '♡ Save for later'}
+        </button>
       </div>
     </div>
   )

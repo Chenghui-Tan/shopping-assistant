@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import Stage1 from './components/Stage1'
 import Stage2 from './components/Stage2'
 import Stage3 from './components/Stage3'
 import Stage4 from './components/Stage4'
 import Stage5 from './components/Stage5'
+import { saveProduct } from './api'
 
 const SCENE_META = {
   1: {
@@ -42,6 +43,17 @@ export default function App() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [openingTurn, setOpeningTurn] = useState(null)
   const [relaxation, setRelaxation] = useState('strict')
+  const [savedUrls, setSavedUrls] = useState(new Set())
+
+  const toggleSave = useCallback(async (product) => {
+    if (!sessionId || !product?.product_url) return
+    try {
+      const data = await saveProduct(sessionId, product)
+      setSavedUrls(new Set((data.saved || []).map((p) => p.product_url)))
+    } catch (e) {
+      console.error('save failed', e)
+    }
+  }, [sessionId])
 
   const handleStage1Complete = (data, turn) => {
     setSessionId(data.session_id)
@@ -79,6 +91,11 @@ export default function App() {
       <div className="step-row">
         <span className="step-label">Human-Centered Shopping Assistant Demo</span>
         <span className="step-right">
+          {savedUrls.size > 0 && (
+            <span className="saved-pill" title="Saved for later">
+              ❤ {savedUrls.size} saved
+            </span>
+          )}
           <span className="step-text">Step {stage} of 5</span>
           <span className="step-dots">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -131,6 +148,8 @@ export default function App() {
               onSupplement={handleSupplement}
               onSelectProduct={handleSelectProduct}
               relaxation={relaxation}
+              savedUrls={savedUrls}
+              onToggleSave={toggleSave}
             />
           )}
           {stage === 4 && (
@@ -138,6 +157,8 @@ export default function App() {
               product={selectedProduct}
               onBack={handleBackToGrid}
               onSeeLifecycle={handleSeeLifecycle}
+              isSaved={selectedProduct && savedUrls.has(selectedProduct.product_url)}
+              onToggleSave={toggleSave}
             />
           )}
           {stage === 5 && <Stage5 sessionId={sessionId} />}

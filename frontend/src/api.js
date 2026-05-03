@@ -34,3 +34,12 @@ export const getLifecycle = async (sessionId) => {
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
+
+export const saveProduct = (sessionId, product) =>
+  post('/session/save', { session_id: sessionId, product })
+
+export const getSaved = async (sessionId) => {
+  const res = await fetch(`${BASE}/session/${sessionId}/saved`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
