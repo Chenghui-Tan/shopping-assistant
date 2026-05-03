@@ -68,6 +68,21 @@ def _resolve_category(preferences: dict[str, Any]) -> str | None:
     return CATEGORY_ALIASES.get(raw.lower().strip()) if raw else None
 
 
+def _pref_has(preferences: dict[str, Any], key: str, *values: str) -> bool:
+    """
+    True iff preferences[key] equals any of `values`, OR is a list that
+    contains any of them. Lets multi-select questions (e.g. smart-display
+    use_case) light up multiple category-specific rules in one pass.
+    """
+    raw = preferences.get(key)
+    if raw is None or raw == "":
+        return False
+    target = set(values)
+    if isinstance(raw, list):
+        return any(v in target for v in raw)
+    return raw in target
+
+
 def _title_has(product: dict[str, Any], *keywords: str) -> bool:
     """Return True if any keyword appears in the product title (case-insensitive)."""
     title = (product.get("title") or "").lower()
@@ -145,6 +160,21 @@ def load_products() -> list[dict[str, Any]]:
 # 2. Filter
 # ---------------------------------------------------------------------------
 
+def _coerce_numeric(v: Any) -> float | int | None:
+    """Best-effort numeric coercion — drops the constraint on bad input.
+
+    The chip map can leave a free-text value untouched (e.g. an unmapped
+    'Under $200' chip stays as a string). Without coercion the comparator
+    `price > price_max` crashes. We prefer dropping the filter to crashing
+    the route — the user gets *more* results, not zero.
+    """
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        return v
+    return None
+
+
 def filter_products(
     products: list[dict[str, Any]],
     preferences: dict[str, Any],
@@ -157,8 +187,8 @@ def filter_products(
                             products with no delivery data are kept (benefit of the doubt)
     """
     category  = _resolve_category(preferences)
-    price_max = preferences.get("price_max")
-    delivery_max = preferences.get("delivery_days_max")
+    price_max = _coerce_numeric(preferences.get("price_max"))
+    delivery_max = _coerce_numeric(preferences.get("delivery_days_max"))
 
     result = []
     for p in products:
@@ -262,11 +292,13 @@ def _score_smart_display(
     preferences: dict[str, Any],
     features: dict[str, bool],
 ) -> tuple[float, list[str]]:
-    use_case = preferences.get("use_case", "")
+    # use_case is the demo's only multi-select question; the user can pick
+    # cooking + family + entertainment together. We OR over picks via
+    # _pref_has so each picked use case independently lights up its rules.
     score = 0.0
     matches: list[str] = []
 
-    if use_case == "cooking":
+    if _pref_has(preferences, "use_case", "cooking"):
         # Voice control is critical for hands-free cooking — penalise its absence
         score = _apply_rule(score, matches, features["voice_control"], "voice_control",
                             penalty=_SOFT_PENALTY)
@@ -274,7 +306,7 @@ def _score_smart_display(
                             _title_has(product, "kitchen hub", "kitchen", "cook", "recipe", "alexa+"),
                             "kitchen_hub_or_recipe")
 
-    elif use_case == "family":
+    if _pref_has(preferences, "use_case", "family"):
         score = _apply_rule(score, matches,
                             _title_has(product, "chore chart", "calendar", "planner", "family", "schedule"),
                             "family_scheduling")
@@ -282,20 +314,23 @@ def _score_smart_display(
                             _title_has(product, "15.6", "15\"", "echo show 15", "echo show 21", "21"),
                             "large_screen")
 
-    elif use_case == "entertainment":
+    if _pref_has(preferences, "use_case", "entertainment"):
         score = _apply_rule(score, matches,
                             _title_has(product, "fire tv", "stream", "video call", "netflix",
                                        "youtube", "prime video"),
                             "entertainment_features")
-        score = _apply_rule(score, matches,
-                            _title_has(product, "15.6", "15\"", "echo show 15", "echo show 21",
-                                       "21", "10.1", "11"),
-                            "large_screen")
+        # Avoid double-counting large_screen if family already added it.
+        if "large_screen" not in matches:
+            score = _apply_rule(score, matches,
+                                _title_has(product, "15.6", "15\"", "echo show 15", "echo show 21",
+                                           "21", "10.1", "11"),
+                                "large_screen")
 
-    elif use_case == "smart_home":
+    if _pref_has(preferences, "use_case", "smart_home"):
         # Voice control is core for smart home — penalise its absence
-        score = _apply_rule(score, matches, features["voice_control"], "smart_home_compatible",
-                            penalty=_SOFT_PENALTY)
+        if "voice_control" not in matches:
+            score = _apply_rule(score, matches, features["voice_control"], "smart_home_compatible",
+                                penalty=_SOFT_PENALTY)
         score = _apply_rule(score, matches,
                             _title_has(product, "smart color bulb", "zigbee", "bluetooth",
                                        "tp-link", "sengled", "wiz"),
@@ -535,6 +570,44 @@ def _try_ranked(
     """
     ranked = rank_products(filter_products(products, preferences), preferences)
     return ranked[:top_n] if len(ranked) >= _MIN_RESULTS else None
+
+
+def recommend_with_relaxation(
+    preferences: dict[str, Any],
+    top_n: int = 10,
+) -> tuple[list[dict[str, Any]], str]:
+    """Same as recommend_products, but also returns which fallback fired.
+
+    Returns a (products, relaxation_tier) tuple where relaxation_tier is one of:
+        "strict"       – all filters honoured (best case)
+        "no_delivery"  – delivery_days_max dropped to find more matches
+        "no_price"     – price_max + delivery_days_max dropped (category only)
+        "no_category"  – everything dropped; ranked by shared score across catalog
+
+    The frontend uses this to render a banner so the user knows their
+    constraints were softened — no silent degradation.
+    """
+    products = load_products()
+
+    result = _try_ranked(products, preferences, top_n)
+    if result is not None:
+        return result, "strict"
+
+    relaxed = {k: v for k, v in preferences.items() if k != "delivery_days_max"}
+    result = _try_ranked(products, relaxed, top_n)
+    if result is not None:
+        return result, "no_delivery"
+
+    relaxed = {k: v for k, v in preferences.items()
+               if k not in ("delivery_days_max", "price_max")}
+    result = _try_ranked(products, relaxed, top_n)
+    if result is not None:
+        return result, "no_price"
+
+    base_prefs = {"priority": preferences.get("priority", _DEFAULT_PRIORITY)}
+    all_with_price = [p for p in products if p.get("price") is not None]
+    ranked = rank_products(all_with_price, base_prefs)
+    return ranked[:top_n], "no_category"
 
 
 def recommend_products(

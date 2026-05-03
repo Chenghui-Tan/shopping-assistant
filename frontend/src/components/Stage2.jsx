@@ -146,14 +146,13 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
     try {
       for (const q of layout) {
         const v = answers[q.key]
-        if (!v) continue
-        // For multi-select, send the first chip as the structured value;
-        // the rest are still visible to the user as their stated preferences.
-        const send = Array.isArray(v) ? v[0] : v
-        if (send) await answerQuestion(sessionId, q.key, send, true)
+        // Skip when nothing picked, or an empty multi-select array.
+        if (v == null || v === '' || (Array.isArray(v) && v.length === 0)) continue
+        // Multi-select sends the full array; backend resolves each chip.
+        await answerQuestion(sessionId, q.key, v, true)
       }
       const data = await getRecommendations(sessionId)
-      onComplete(data.products)
+      onComplete(data.products, data.relaxation)
     } catch (e) {
       submitted.current = false
       setError('Could not load recommendations. Please try again.')

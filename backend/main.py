@@ -10,7 +10,7 @@ engine.DATA_PATH = Path(__file__).parent.parent / "data" / "clean" / "products_c
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ValidationError
 
 import session as session_store
 import claude_client
@@ -37,7 +37,9 @@ class StartBody(BaseModel):
 class AnswerBody(BaseModel):
     session_id: str
     question_key: str
-    answer: str
+    # answer accepts a single chip label, free text, or a list of chip
+    # labels (for multi-select questions like smart_display.use_case).
+    answer: str | list[str]
     is_chip: bool = False
 
 class RecommendBody(BaseModel):
@@ -46,6 +48,55 @@ class RecommendBody(BaseModel):
 class RefineBody(BaseModel):
     session_id: str
     text: str
+
+
+# Schema we expect Claude's parse_supplement to return. Anything outside
+# this shape is rejected so a hallucinated `{insulated: "maybe"}` cannot
+# silently corrupt the engine's preference dict.
+class _SupplementUpdates(BaseModel):
+    """Only fields the ranker recognises. Extra fields are dropped."""
+    use_case:          str | list[str] | None = None
+    use_area:          str | None = None
+    pain_point:        str | None = None
+    structure_type:    str | None = None
+    insulated:         bool | None = None
+    size_preference:   str | None = None
+    easy_clean:        bool | None = None
+    easy_install:      bool | None = None
+    price_max:         float | int | None = None
+    delivery_days_max: float | int | None = None
+    priority:          str | None = None
+    model_config = {"extra": "ignore"}
+
+
+class _SupplementResponse(BaseModel):
+    preference_updates: _SupplementUpdates = Field(default_factory=_SupplementUpdates)
+    ai_response: str = ""
+    model_config = {"extra": "ignore"}
+
+
+def _validated_supplement(raw: dict) -> dict:
+    """Validate Claude's parse_supplement output against the schema.
+
+    Returns a dict in the shape the rest of the route expects:
+        {"preference_updates": {...}, "ai_response": str}
+    On invalid input we drop the preference updates entirely (better to
+    keep stale preferences than to corrupt them) and surface a generic
+    acknowledgement.
+    """
+    try:
+        validated = _SupplementResponse.model_validate(raw)
+    except ValidationError:
+        return {
+            "preference_updates": {},
+            "ai_response": raw.get("ai_response", "Got it — refreshed below.")
+                           if isinstance(raw, dict) else "Got it — refreshed below.",
+        }
+    # exclude_none keeps the engine seeing only fields the user actually changed
+    return {
+        "preference_updates": validated.preference_updates.model_dump(exclude_none=True),
+        "ai_response": validated.ai_response or "Updated below.",
+    }
 
 
 # --- Helpers ---
@@ -79,12 +130,12 @@ def _format_product(p: dict, explanation: str) -> dict:
     }
 
 
-def _run_recommendations(session: dict) -> list[dict]:
+def _run_recommendations(session: dict) -> tuple[list[dict], str]:
     # Merge session.category into the preferences dict the engine expects.
     # The engine resolves category from preferences["category"], but the
     # session stores it as a top-level field for clarity.
     prefs = {**session["preferences"], "category": session["category"]}
-    products = engine.recommend_products(prefs, top_n=12)
+    products, relaxation = engine.recommend_with_relaxation(prefs, top_n=12)
     try:
         explanations = claude_client.write_explanations(
             products, session["preferences"], session["raw_input"]
@@ -95,7 +146,7 @@ def _run_recommendations(session: dict) -> list[dict]:
         explanations = [p.get("_explanation", "") for p in products]
     formatted = [_format_product(p, explanations[i]) for i, p in enumerate(products)]
     session_store.set_recommendations(session["session_id"], formatted)
-    return formatted
+    return formatted, relaxation
 
 
 # --- Routes ---
@@ -140,24 +191,34 @@ def answer_question(body: AnswerBody):
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Special case: user is picking a category from the category chips
+    # Special case: user is picking a category from the category chips.
+    # Category is always single-valued — coerce a list to its first element.
     if body.question_key == "category":
-        category = CATEGORY_ALIASES.get(body.answer, body.answer)
+        raw = body.answer[0] if isinstance(body.answer, list) else body.answer
+        category = CATEGORY_ALIASES.get(raw, raw)
         session_store.update_category(body.session_id, category)
         s = session_store.get_session(body.session_id)
         return {"next_question": _next_question(s)}
 
-    # Map chip answer directly; free-text goes through Claude
+    # Map chip answer(s) to structured values. A list of chips becomes a
+    # list of resolved values; the engine's category-specific scorers
+    # accept either a single value or a list (see _score_smart_display).
     if body.is_chip:
-        value = CHIP_TO_VALUE.get(body.question_key, {}).get(body.answer, body.answer)
+        chip_map = CHIP_TO_VALUE.get(body.question_key, {})
+        if isinstance(body.answer, list):
+            value = [chip_map.get(a, a) for a in body.answer]
+        else:
+            value = chip_map.get(body.answer, body.answer)
     else:
+        # Free-text answers must be a single string — coerce defensively.
+        text = body.answer if isinstance(body.answer, str) else " ".join(body.answer)
         q = get_question(s["category"], body.question_key)
         question_text = q["text"] if q else body.question_key
         try:
-            value = claude_client.map_free_text_answer(body.question_key, question_text, body.answer)
+            value = claude_client.map_free_text_answer(body.question_key, question_text, text)
         except Exception:
             # Fall back: store the raw text — the engine treats unknowns gracefully.
-            value = body.answer
+            value = text
 
     session_store.update_preferences(body.session_id, {body.question_key: value})
     session_store.record_answer(body.session_id, body.question_key)
@@ -171,7 +232,8 @@ def recommend(body: RecommendBody):
     s = session_store.get_session(body.session_id)
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
-    return {"products": _run_recommendations(s)}
+    products, relaxation = _run_recommendations(s)
+    return {"products": products, "relaxation": relaxation}
 
 
 @app.post("/session/refine")
@@ -181,7 +243,8 @@ def refine(body: RefineBody):
         raise HTTPException(status_code=404, detail="Session not found")
 
     try:
-        result = claude_client.parse_supplement(body.text, s["preferences"], s["raw_input"])
+        raw = claude_client.parse_supplement(body.text, s["preferences"], s["raw_input"])
+        result = _validated_supplement(raw)
     except Exception:
         # Without LLM access, treat the user's supplement as an acknowledged note
         # and re-run recommendations against the same preferences.
@@ -192,10 +255,14 @@ def refine(body: RefineBody):
     session_store.update_preferences(body.session_id, result["preference_updates"])
 
     s = session_store.get_session(body.session_id)
-    products = _run_recommendations(s)
+    products, relaxation = _run_recommendations(s)
     session_store.add_supplement_log(body.session_id, body.text, result["ai_response"])
 
-    return {"products": products, "ai_response": result["ai_response"]}
+    return {
+        "products": products,
+        "ai_response": result["ai_response"],
+        "relaxation": relaxation,
+    }
 
 
 # Lifecycle data for Scene 5 — keyed per category. Mock data so the

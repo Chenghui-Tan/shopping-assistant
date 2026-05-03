@@ -149,7 +149,7 @@ def test_recommend_returns_five_products(mock_engine, mock_claude):
     start = client.post("/session/start", json={"text": "gym water bottle"}).json()
     sid = start["session_id"]
 
-    mock_engine.recommend_products.return_value = _mock_products(5)
+    mock_engine.recommend_with_relaxation.return_value = (_mock_products(5), "strict")
     mock_claude.messages.create.return_value = _mock_response(
         json.dumps(["Exp 1", "Exp 2", "Exp 3", "Exp 4", "Exp 5"])
     )
@@ -180,7 +180,7 @@ def test_refine_updates_preferences_and_returns_products(mock_engine, mock_claud
     start = client.post("/session/start", json={"text": "gym water bottle"}).json()
     sid = start["session_id"]
 
-    mock_engine.recommend_products.return_value = _mock_products(5)
+    mock_engine.recommend_with_relaxation.return_value = (_mock_products(5), "strict")
     mock_claude.messages.create.side_effect = [
         _mock_response(json.dumps({
             "preference_updates": {"price_max": 20},

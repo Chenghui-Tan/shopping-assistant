@@ -387,6 +387,28 @@ textarea::placeholder { color: var(--text-muted); }
 .cat-icon { font-size: 26px; }
 
 /* ----- Scene 3 — Recommendation grid ----- */
+.relax-banner {
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.relax-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #92400e;
+  margin-bottom: 4px;
+}
+.relax-banner-icon { font-size: 16px; }
+.relax-banner-body {
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
 .grid-summary {
   font-size: 13px;
   color: var(--text-secondary);

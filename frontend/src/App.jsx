@@ -41,6 +41,7 @@ export default function App() {
   const [startData, setStartData] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [openingTurn, setOpeningTurn] = useState(null)
+  const [relaxation, setRelaxation] = useState('strict')
 
   const handleStage1Complete = (data, turn) => {
     setSessionId(data.session_id)
@@ -49,13 +50,15 @@ export default function App() {
     setStage(2)
   }
 
-  const handleStage2Complete = (fetchedProducts) => {
+  const handleStage2Complete = (fetchedProducts, relaxationLevel) => {
     setProducts(fetchedProducts)
+    setRelaxation(relaxationLevel || 'strict')
     setStage(3)
   }
 
-  const handleSupplement = (fetchedProducts, aiResponse) => {
+  const handleSupplement = (fetchedProducts, aiResponse, relaxationLevel) => {
     setProducts(fetchedProducts)
+    setRelaxation(relaxationLevel || 'strict')
     setSupplementLog((prev) => [{ aiResponse, timestamp: Date.now() }, ...prev])
   }
 
@@ -127,6 +130,7 @@ export default function App() {
               supplementLog={supplementLog}
               onSupplement={handleSupplement}
               onSelectProduct={handleSelectProduct}
+              relaxation={relaxation}
             />
           )}
           {stage === 4 && (
