@@ -771,6 +771,60 @@ textarea::placeholder { color: var(--text-muted); }
   color: var(--text-muted);
 }
 
+/* ----- Diff card (preference continuity) ----- */
+.refine-history { margin-bottom: 10px; }
+.refine-turn { padding: 8px 0; }
+.refine-ai {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.refine-ai-label {
+  color: var(--accent-blue-2);
+  font-weight: 600;
+}
+.diff-card {
+  margin-top: 6px;
+  background: #f8fafc;
+  border: 1px dashed var(--border-soft);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.diff-card-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.diff-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.diff-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  flex-wrap: wrap;
+}
+.diff-key {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 110px;
+}
+.diff-from {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+.diff-arrow { color: var(--text-muted); }
+.diff-to {
+  color: var(--accent-blue);
+  font-weight: 600;
+}
+
 /* ----- Supplement bar (refine) ----- */
 .supplement-bar {
   margin-top: 24px;

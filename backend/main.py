@@ -252,16 +252,25 @@ def refine(body: RefineBody):
             "preference_updates": {},
             "ai_response": f'Got it — "{body.text}". Updated recommendations below.',
         }
+
+    # Capture preferences BEFORE the merge so we can diff. Without this the
+    # /refine route silently overwrites prior elicitation — the proposal's
+    # 'preference continuity across turns' headline is empty otherwise.
+    before = dict(s["preferences"])
     session_store.update_preferences(body.session_id, result["preference_updates"])
+    after = session_store.get_session(body.session_id)["preferences"]
+    diff  = session_store.diff_preferences(before, after)
 
     s = session_store.get_session(body.session_id)
     products, relaxation = _run_recommendations(s)
-    session_store.add_supplement_log(body.session_id, body.text, result["ai_response"])
+    session_store.add_supplement_log(body.session_id, body.text, result["ai_response"], diff=diff)
 
     return {
-        "products": products,
-        "ai_response": result["ai_response"],
-        "relaxation": relaxation,
+        "products":     products,
+        "ai_response":  result["ai_response"],
+        "relaxation":   relaxation,
+        "diff":         diff,
+        "history":      s["supplement_log"],
     }
 
 

@@ -56,10 +56,10 @@ export default function App() {
     setStage(3)
   }
 
-  const handleSupplement = (fetchedProducts, aiResponse, relaxationLevel) => {
+  const handleSupplement = (fetchedProducts, aiResponse, relaxationLevel, diff) => {
     setProducts(fetchedProducts)
     setRelaxation(relaxationLevel || 'strict')
-    setSupplementLog((prev) => [{ aiResponse, timestamp: Date.now() }, ...prev])
+    setSupplementLog((prev) => [{ aiResponse, diff: diff || {}, timestamp: Date.now() }, ...prev])
   }
 
   const handleSelectProduct = (product) => {

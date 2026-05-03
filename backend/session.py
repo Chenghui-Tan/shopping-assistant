@@ -43,9 +43,32 @@ def set_recommendations(session_id: str, recommendations: list) -> None:
     _sessions[session_id]["recommendations"] = recommendations
 
 
-def add_supplement_log(session_id: str, user_text: str, ai_response: str) -> None:
+def add_supplement_log(
+    session_id: str,
+    user_text: str,
+    ai_response: str,
+    diff: dict | None = None,
+) -> None:
+    """Record a refine turn. `diff` captures preference deltas for continuity:
+    {key: {"from": old_value, "to": new_value}}.
+    """
     _sessions[session_id]["supplement_log"].append({
-        "user_text": user_text,
+        "user_text":   user_text,
         "ai_response": ai_response,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "diff":        diff or {},
+        "timestamp":   datetime.now(timezone.utc).isoformat(),
     })
+
+
+def diff_preferences(before: dict, after: dict) -> dict:
+    """Return {key: {from, to}} for keys whose value changed.
+
+    Skips keys absent from `after` (no overwrite) and keys whose value is
+    semantically equal (None == None).
+    """
+    out: dict[str, dict] = {}
+    for k, new_v in after.items():
+        old_v = before.get(k)
+        if old_v != new_v:
+            out[k] = {"from": old_v, "to": new_v}
+    return out
