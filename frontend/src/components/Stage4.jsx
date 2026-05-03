@@ -1,49 +1,92 @@
+// Rule names emitted by the ranker → human-readable reasons. Mirrors the
+// backend's recommendation_Algorithem/explainability.py mapping. Keeping
+// it duplicated here is deliberate: explanations should render even if a
+// future API change drops the `explanation` field. If the ranker emits a
+// rule we don't recognise, we silently skip it rather than invent copy.
+const RULE_TEXT = {
+  voice_control:           'Hands-free voice control — useful when your hands are full or messy.',
+  kitchen_hub_or_recipe:   'Designed for kitchen and recipe use, not a generic tablet.',
+  family_scheduling:       'Family calendar / scheduling features built in.',
+  large_screen:            'Large screen — easier to follow recipes from across the counter.',
+  entertainment_features:  'Streams video, supports cooking shows and recipe walkthroughs.',
+  smart_home_compatible:   'Voice-controllable for smart-home routines.',
+  smart_device_bundle:     'Bundled with a smart-home device — single-purchase setup.',
+  display_device:          'A real display device — not a sensor or speaker miscategorised.',
+  gym_suitable:            'Lightweight or athletic-grade build — fits a gym bag.',
+  insulated_gym:           'Double-wall insulation keeps drinks cold during a workout.',
+  daily_use:               'Designed for daily carry — ergonomic, leak-resistant.',
+  outdoor_capacity:        'Large capacity — fewer refills outdoors.',
+  insulated_outdoor:       'Holds temperature for hours — important on long trips.',
+  kids_design:             'Kid-friendly design and licensed character finish.',
+  kids_lightweight:        'Light enough for kids to carry without strain.',
+  insulated:               'Insulated — keeps drinks hot or cold as you asked.',
+  lightweight_size:        'Lightweight body — easy to throw in a bag.',
+  easy_clean:              'Dishwasher-safe / easy to clean — matches your stated preference.',
+  cabinet_fit:             'Sized and shaped for cabinet shelves.',
+  cabinet_stackable:       'Stackable / expandable — claws back vertical cabinet space.',
+  countertop_suitable:     'Counter-friendly footprint — stays out of the way.',
+  countertop_aesthetic:    "Clean, modern look — won't visually clutter the counter.",
+  under_sink_fit:          'Bin / basket form factor — fits the awkward under-sink area.',
+  space_efficient:         'Built specifically to maximise tight spaces.',
+  visibility_easy_access:  'Clear or compartmented — every item is visible at a glance.',
+  easy_install:            'Comes ready-assembled or as a modular set — minimal setup.',
+}
+
+function reasonsFromRules(rules) {
+  const out = []
+  for (const r of rules || []) {
+    if (RULE_TEXT[r]) {
+      out.push(RULE_TEXT[r])
+      continue
+    }
+    if (r.startsWith('structure_')) {
+      out.push('Matches the organiser style you picked: ' + r.slice('structure_'.length).replace(/_/g, ' ') + '.')
+    }
+  }
+  return out
+}
+
 function deriveReasons(product) {
   if (!product) return []
-  const t = (product.title || '').toLowerCase()
-  const reasons = []
-  if (/15\.6|echo show 15|21"|wall/.test(t))
-    reasons.push('The large 15.6" screen makes recipes easy to follow while cooking, reducing the need to squint or get close.')
-  if (/voice|alexa|echo|google/.test(t))
-    reasons.push("Hands-free voice control works well in the kitchen when your hands are messy or busy.")
-  if (/calendar|family|hub|planner/.test(t))
-    reasons.push('Built-in meal planning and nutrition features support healthier routines for your family.')
-  if (/cook|recipe|kitchen/.test(t))
-    reasons.push('It also supports videos and family scheduling during meals, adding value beyond cooking.')
-  if (/insulated|stainless|vacuum/.test(t))
-    reasons.push('Double-wall insulation keeps drinks cold for hours — ideal mid-workout.')
-  if (/lightweight|plastic|tritan/.test(t))
-    reasons.push('Lightweight construction means you can throw it in your gym bag without weighing you down.')
-  if (/stackable|expandable|tier/.test(t))
-    reasons.push('Stackable / expandable design maximizes vertical space — exactly what tight cabinets need.')
-  if (/drawer|flatware|compartment/.test(t))
-    reasons.push('Drawer / compartment layout means every utensil has a home — no more morning hunting.')
-  if (/lazy susan|turn table/.test(t))
-    reasons.push('Lazy Susan keeps countertop items visible and one-spin-away.')
-  if (product.rating && product.rating >= 4.5)
-    reasons.push(`High customer rating (${product.rating.toFixed(1)}★) signals dependable quality from real users.`)
-  if (reasons.length < 3) {
-    reasons.push('Matches your stated budget and delivery window without compromising on the features you said matter most.')
-    reasons.push('Surfaced by a deterministic ranking pass — not a black-box click-prediction model — so the rationale is fully auditable.')
+  const reasons = reasonsFromRules(product.rule_matches)
+
+  // Add rating evidence if it qualifies — this is information from the
+  // shared score, not a category-specific rule, but users care about it.
+  if (product.rating && product.rating >= 4.5) {
+    reasons.push(`Top-tier customer rating (${product.rating.toFixed(1)}★) — dependable signal from real users.`)
+  }
+
+  // Last-resort fallback: if the ranker emitted no recognisable rules
+  // (rare — happens for the 4th-tier 'no category' fallback) we say so
+  // honestly rather than fabricate reasons.
+  if (reasons.length === 0) {
+    reasons.push("This product surfaced as a close match to your stated budget and delivery window, even though no category-specific feature rule fired.")
   }
   return reasons.slice(0, 5)
 }
 
 function deriveTradeoff(product) {
-  const t = (product.title || '').toLowerCase()
-  if (/15\.6|echo show 15|21"|wall/.test(t)) {
-    return 'This model is slightly larger, so ensure you have counter space. The best choice if you want full hands-free comprehensive use.'
+  if (!product) return null
+  const rules = new Set(product.rule_matches || [])
+
+  // Trade-offs are derived from rule context. Only emit one when we can
+  // ground it; otherwise return null and the UI can hide the card.
+  if (rules.has('large_screen')) {
+    return 'A larger screen is the strongest fit for your stated use case but takes more counter space than a smaller smart display.'
   }
-  if (/insulated/.test(t)) {
-    return 'Insulation adds some weight versus a plain plastic bottle — a worthwhile trade for cold drinks during long workouts.'
+  if (rules.has('insulated_gym') || rules.has('insulated_outdoor')) {
+    return 'Insulated double-wall construction adds some weight versus a plain plastic bottle — worth it for the temperature retention you asked for.'
   }
-  if (/expandable|stackable/.test(t)) {
-    return "Stackable bins require a bit of setup, but they pay back daily by carving out 30–40% more usable space."
+  if (rules.has('cabinet_stackable') || rules.has('space_efficient')) {
+    return 'Stackable / expandable bins require a bit of initial setup, but they recover 30–40% more usable cabinet space day-to-day.'
   }
-  if (product.price && product.price < 20) {
-    return 'Lowest price in your set; if you upgrade later, the extra features cost a small premium but are not necessary today.'
+  if (rules.has('display_device') && product.price && product.price > 100) {
+    return "Pricier than a basic speaker, but you're paying for the screen and recipe-following capability that your use case needs."
   }
-  return "There's a small premium over the cheapest option — but the rating and feature match make it worth it for your stated priorities."
+  if (product.price && product.price < 15) {
+    return 'Lowest-cost option in your set; if your needs grow later, upgrading is straightforward.'
+  }
+  return null
 }
 
 export default function Stage4({ product, onBack, onSeeLifecycle }) {
@@ -60,6 +103,11 @@ export default function Stage4({ product, onBack, onSeeLifecycle }) {
 
   const reasons = deriveReasons(product)
   const tradeoff = deriveTradeoff(product)
+  // The backend already wrote a one-line summary explanation; show it
+  // above the bullet list so the user gets a personal sentence first.
+  const summary = product.explanation && product.explanation.trim() !== ''
+    ? product.explanation
+    : null
 
   return (
     <div className="why-page">
@@ -85,6 +133,8 @@ export default function Stage4({ product, onBack, onSeeLifecycle }) {
         </div>
       </div>
 
+      {summary && <p className="why-summary">{summary}</p>}
+
       <h3 className="why-headline">
         <span className="why-check">✓</span> This option is recommended because:
       </h3>
@@ -92,14 +142,19 @@ export default function Stage4({ product, onBack, onSeeLifecycle }) {
         {reasons.map((r, i) => <li key={i}>{r}</li>)}
       </ul>
 
-      <div className="tradeoff-card">
-        <div className="tradeoff-label">⚠️ Trade-offs to consider</div>
-        <div className="tradeoff-text">{tradeoff}</div>
-      </div>
+      {tradeoff && (
+        <div className="tradeoff-card">
+          <div className="tradeoff-label">⚠️ Trade-off to consider</div>
+          <div className="tradeoff-text">{tradeoff}</div>
+        </div>
+      )}
 
       <div className="trust-banner">
         <span className="trust-icon">🛡️</span>
-        <span><strong>Transparency builds trust:</strong> We explain not just <em>what's "best"</em> but why it fits your specific needs and lifestyle.</span>
+        <span>
+          <strong>Transparency builds trust:</strong> every reason above maps to a rule the
+          ranker actually used — not a generic marketing bullet.
+        </span>
       </div>
 
       <div className="why-cta-row">

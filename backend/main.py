@@ -68,6 +68,14 @@ def _format_product(p: dict, explanation: str) -> dict:
         "image_url": p.get("image_url", ""),
         "product_url": p.get("product_url", ""),
         "explanation": explanation,
+        # Signals the ranker actually used — surfaced so the frontend can
+        # ground its "why this fits" page in the same evidence rather than
+        # re-deriving from the product title.
+        "category": p.get("category"),
+        "arrival_time_days": p.get("arrival_time_days"),
+        "rule_matches": p.get("_category_rule_matches", []),
+        "features": {k: v for k, v in (p.get("_inferred_features") or {}).items() if v},
+        "score": p.get("_score"),
     }
 
 

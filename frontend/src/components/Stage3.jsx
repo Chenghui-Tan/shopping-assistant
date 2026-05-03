@@ -22,7 +22,6 @@ export default function Stage3({ sessionId, products, supplementLog, onSupplemen
             key={product.product_url || i}
             product={product}
             onSelect={() => onSelectProduct(product)}
-            highlightSale={i === 0 || i === 4 || i === 7}
           />
         ))}
       </div>

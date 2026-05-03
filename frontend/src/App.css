@@ -543,6 +543,17 @@ textarea::placeholder { color: var(--text-muted); }
 .why-product-rating { color: #f59e0b; font-size: 13px; }
 .why-product-rating .rating-num { color: var(--text-secondary); margin-left: 6px; }
 
+.why-summary {
+  background: #f8fafc;
+  border-left: 3px solid var(--accent-blue);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  font-style: italic;
+}
+
 .why-headline {
   display: flex;
   align-items: center;
