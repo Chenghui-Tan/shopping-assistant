@@ -30,6 +30,22 @@ const RULE_TEXT = {
   space_efficient:         'Built specifically to maximise tight spaces.',
   visibility_easy_access:  'Clear or compartmented — every item is visible at a glance.',
   easy_install:            'Comes ready-assembled or as a modular set — minimal setup.',
+  // Smart display + bottle/organiser additions (mirror backend explainability.py).
+  wall_mountable:          'Wall-mountable — fits the placement you chose.',
+  kitchen_friendly_size:   'Compact enough to fit on a typical kitchen counter.',
+  compact_screen:          'Compact screen — small footprint as you asked for.',
+  mid_screen:              'Mid-size screen — readable while leaving counter space.',
+  large_screen_pref:       'Large screen — easy to read from across the room.',
+  no_camera_match:         'No camera — matches your privacy preference.',
+  visibility_clear:        'Clear / see-through build — every item visible at a glance.',
+}
+
+const PREFIX_RULE_TEXT = {
+  ecosystem_:           'Works with your voice ecosystem: ',
+  material_:            'Matches the bottle material you picked: ',
+  drinking_style_:      'Matches the drinking style you picked: ',
+  organiser_material_:  'Matches the organiser material you picked: ',
+  structure_:           'Matches the organiser style you picked: ',
 }
 
 function reasonsFromRules(rules) {
@@ -39,9 +55,15 @@ function reasonsFromRules(rules) {
       out.push(RULE_TEXT[r])
       continue
     }
-    if (r.startsWith('structure_')) {
-      out.push('Matches the organiser style you picked: ' + r.slice('structure_'.length).replace(/_/g, ' ') + '.')
+    let matched = false
+    for (const [prefix, text] of Object.entries(PREFIX_RULE_TEXT)) {
+      if (r.startsWith(prefix)) {
+        out.push(text + r.slice(prefix.length).replace(/_/g, ' ') + '.')
+        matched = true
+        break
+      }
     }
+    if (matched) continue
   }
   return out
 }

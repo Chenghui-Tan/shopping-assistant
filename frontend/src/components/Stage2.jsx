@@ -58,6 +58,18 @@ const QUESTION_LAYOUT = {
       chips: ['Gym', 'Daily carry', 'Outdoor', 'Kids'],
     },
     {
+      key: 'material_preference',
+      icon: '🥤',
+      text: 'Material preference?',
+      chips: ['Stainless steel', 'BPA-free plastic', 'Either is fine'],
+    },
+    {
+      key: 'drinking_style',
+      icon: '👄',
+      text: 'How do you prefer to drink from it?',
+      chips: ['FreeSip / hybrid', 'Straw', 'Standard cap', 'Kids spout', "Doesn't matter"],
+    },
+    {
       key: 'insulated',
       icon: '🧊',
       text: 'Do you need it to keep drinks hot or cold?',
@@ -68,6 +80,12 @@ const QUESTION_LAYOUT = {
       icon: '📏',
       text: 'Any size preference?',
       chips: ['Lightweight', 'Large capacity', 'No preference'],
+    },
+    {
+      key: 'price_max',
+      icon: '💲',
+      text: "What's your budget?",
+      chips: ['Under $15', 'Under $25', 'Under $40', 'No limit'],
     },
   ],
   kitchen_organizer: [
@@ -81,13 +99,32 @@ const QUESTION_LAYOUT = {
       key: 'pain_point',
       icon: '😣',
       text: "What's your biggest frustration?",
+      hint: 'pick one or more',
       chips: ['Not enough space', 'Hard to find things'],
     },
     {
       key: 'structure_type',
       icon: '🧱',
-      text: 'Any preference on the type of organizer?',
+      text: 'Any preference on the type of organiser?',
       chips: ['Stackable', 'Drawer', 'Bin', 'Expandable', 'Lazy Susan'],
+    },
+    {
+      key: 'organizer_material',
+      icon: '🪵',
+      text: 'Material preference?',
+      chips: ['Plastic', 'Bamboo', 'Metal', "Doesn't matter"],
+    },
+    {
+      key: 'visibility_priority',
+      icon: '👀',
+      text: 'How important is it to see the contents?',
+      chips: ['Clear / see-through', 'Opaque is fine', "Doesn't matter"],
+    },
+    {
+      key: 'price_max',
+      icon: '💲',
+      text: "What's your budget?",
+      chips: ['Under $10', 'Under $20', 'Under $40', 'No limit'],
     },
   ],
 }
@@ -119,6 +156,10 @@ const VALUE_TO_CHIP = {
   placement:        { kitchen: 'Kitchen counter', wall: 'Wall mount', living_room: 'Living room', bedroom: 'Bedroom' },
   screen_size_priority: { compact: 'Compact (under 8")', mid: 'Mid (8–11")', large: 'Large (15"+)', any: "Doesn't matter" },
   privacy_camera:   { ok: 'Camera is fine', no_camera: 'Prefer no camera', any: "Doesn't matter" },
+  material_preference: { stainless: 'Stainless steel', plastic: 'BPA-free plastic', any: 'Either is fine' },
+  drinking_style:   { freesip: 'FreeSip / hybrid', straw: 'Straw', standard: 'Standard cap', kids: 'Kids spout', any: "Doesn't matter" },
+  organizer_material: { plastic: 'Plastic', bamboo: 'Bamboo', metal: 'Metal', any: "Doesn't matter" },
+  visibility_priority: { clear: 'Clear / see-through', opaque: 'Opaque is fine', any: "Doesn't matter" },
 }
 
 function chipFromValue(qKey, v) {

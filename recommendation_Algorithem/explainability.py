@@ -52,8 +52,23 @@ _RULE_TEXT: dict[str, str] = {
 
 # Rule patterns that take a parameter, e.g. structure_stackable, structure_drawer
 _PREFIX_RULE_TEXT: dict[str, str] = {
-    "structure_": "Matches the organiser style you picked: ",
+    "structure_":            "Matches the organiser style you picked: ",
+    "ecosystem_":            "Works with your existing voice ecosystem: ",
+    "material_":             "Matches the bottle material you picked: ",
+    "drinking_style_":       "Matches the drinking style you picked: ",
+    "organiser_material_":   "Matches the organiser material you picked: ",
 }
+
+# Map of additional smart_display + organiser rules.
+_RULE_TEXT.update({
+    "wall_mountable":          "Wall-mountable — fits the placement you chose.",
+    "kitchen_friendly_size":   "Compact enough to fit on a typical kitchen counter.",
+    "compact_screen":          "Compact screen — small footprint as you asked for.",
+    "mid_screen":              "Mid-size screen — readable while leaving counter space.",
+    "large_screen_pref":       "Large screen — easy to read from across the room.",
+    "no_camera_match":         "No camera — matches your privacy preference.",
+    "visibility_clear":        "Clear / see-through build — every item visible at a glance.",
+})
 
 
 def reasons_from_rules(rule_matches: Iterable[str]) -> list[str]:

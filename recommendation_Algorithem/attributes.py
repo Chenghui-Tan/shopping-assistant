@@ -138,6 +138,56 @@ def capacity_oz(title: str) -> int | None:
     return None
 
 
+# --- Bottle material ---------------------------------------------------------
+
+def bottle_material(title: str) -> str | None:
+    if not title:
+        return None
+    tl = title.lower()
+    if any(k in tl for k in ["stainless steel", "stainless"]): return "stainless"
+    if any(k in tl for k in ["tritan", "bpa-free", "plastic"]):  return "plastic"
+    if "glass" in tl:                                            return "glass"
+    return None
+
+
+# --- Bottle drinking style ---------------------------------------------------
+
+def bottle_drinking_style(title: str) -> str | None:
+    if not title:
+        return None
+    tl = title.lower()
+    if "freesip" in tl:        return "freesip"
+    if "straw" in tl:          return "straw"
+    if "spout" in tl:          return "spout"
+    if "kids" in tl or "kid's" in tl: return "kids"
+    if any(k in tl for k in ["pop and fill", "easy fill", "wide mouth"]):
+        return "wide_mouth"
+    return None
+
+
+# --- Organiser material ------------------------------------------------------
+
+def organizer_material(title: str) -> str | None:
+    if not title:
+        return None
+    tl = title.lower()
+    if any(k in tl for k in ["bamboo", "wooden", "wood"]): return "bamboo"
+    if any(k in tl for k in ["metal", "steel", "wire"]):   return "metal"
+    if "plastic" in tl or "petg" in tl or "polyethylene" in tl: return "plastic"
+    return None
+
+
+# --- Organiser visibility (clear vs opaque) ----------------------------------
+
+def organizer_visibility(title: str) -> str | None:
+    if not title:
+        return None
+    tl = title.lower()
+    if any(k in tl for k in ["clear", "transparent", "see-through"]):  return "clear"
+    if any(k in tl for k in ["opaque", "white", "natural", "brown"]):  return "opaque"
+    return None
+
+
 # --- Combined extraction ------------------------------------------------------
 
 def extract_all(product: dict) -> dict:
@@ -155,5 +205,10 @@ def extract_all(product: dict) -> dict:
         out["has_camera"]    = has_camera(title)
         out["mounting"]      = mounting(title)
     elif cat == "water_bottle":
-        out["capacity_oz"]   = capacity_oz(title)
+        out["capacity_oz"]    = capacity_oz(title)
+        out["bottle_material"]= bottle_material(title)
+        out["drinking_style"] = bottle_drinking_style(title)
+    elif cat == "kitchen_organizer":
+        out["organizer_material"]   = organizer_material(title)
+        out["organizer_visibility"] = organizer_visibility(title)
     return out

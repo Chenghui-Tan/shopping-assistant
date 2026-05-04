@@ -113,7 +113,8 @@ def test_answer_chip_advances_to_next_question(mock_engine, mock_claude):
     })
     assert resp.status_code == 200
     data = resp.json()
-    assert data["next_question"]["key"] == "insulated"
+    # After answering use_case, next is material_preference (added in iter β.5).
+    assert data["next_question"]["key"] == "material_preference"
 
 
 @patch("claude_client.client")

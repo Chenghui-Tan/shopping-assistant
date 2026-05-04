@@ -7,19 +7,28 @@ from questions import get_question_queue, get_question, CHIP_TO_VALUE, CATEGORY_
 
 
 def test_all_unanswered_questions_returned():
-    prefs = {"use_area": None, "pain_point": None, "structure_type": None}
-    queue = get_question_queue("kitchen_organizer", prefs)
-    assert queue == ["use_area", "pain_point", "structure_type"]
+    queue = get_question_queue("kitchen_organizer", {})
+    # Order is preserved; first three are the original triad.
+    assert queue[:3] == ["use_area", "pain_point", "structure_type"]
 
 
 def test_answered_questions_skipped():
-    prefs = {"use_area": "cabinet", "pain_point": None, "structure_type": None}
+    prefs = {"use_area": "cabinet"}
     queue = get_question_queue("kitchen_organizer", prefs)
-    assert queue == ["pain_point", "structure_type"]
+    assert "use_area" not in queue
+    assert "pain_point" in queue
 
 
 def test_all_answered_returns_empty():
-    prefs = {"use_area": "cabinet", "pain_point": "not_enough_space", "structure_type": "stackable"}
+    # Provide every key in the kitchen_organizer sequence so the queue empties.
+    prefs = {
+        "use_area": "cabinet",
+        "pain_point": "not_enough_space",
+        "structure_type": "stackable",
+        "organizer_material": "plastic",
+        "visibility_priority": "clear",
+        "price_max": 20,
+    }
     queue = get_question_queue("kitchen_organizer", prefs)
     assert queue == []
 

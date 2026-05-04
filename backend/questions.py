@@ -20,8 +20,25 @@ QUESTION_SEQUENCES: dict[str, list[dict]] = {
         },
         {
             "key": "structure_type",
-            "text": "Any preference on the type of organizer?",
+            "text": "Any preference on the type of organiser?",
             "chips": ["Stackable", "Drawer", "Bin", "Expandable", "Lazy Susan"],
+        },
+        # Material drives both look and durability — highly-asked.
+        {
+            "key": "organizer_material",
+            "text": "Material preference?",
+            "chips": ["Plastic", "Bamboo", "Metal", "Doesn't matter"],
+        },
+        # 'Clear' is the single most-requested visibility feature.
+        {
+            "key": "visibility_priority",
+            "text": "How important is it to see the contents?",
+            "chips": ["Clear / see-through", "Opaque is fine", "Doesn't matter"],
+        },
+        {
+            "key": "price_max",
+            "text": "What's your budget?",
+            "chips": ["Under $10", "Under $20", "Under $40", "No limit"],
         },
     ],
     "water_bottle": [
@@ -29,6 +46,20 @@ QUESTION_SEQUENCES: dict[str, list[dict]] = {
             "key": "use_case",
             "text": "What will you mainly use it for?",
             "chips": ["Gym", "Daily carry", "Outdoor", "Kids"],
+        },
+        # Most-asked decision factor after use case.
+        {
+            "key": "material_preference",
+            "text": "Material preference?",
+            "chips": ["Stainless steel", "BPA-free plastic", "Either is fine"],
+        },
+        # Lid / spout style is the second most-asked. Kids and adults
+        # have very different answers here.
+        {
+            "key": "drinking_style",
+            "text": "How do you prefer to drink from it?",
+            "chips": ["FreeSip / hybrid", "Straw", "Standard cap", "Kids spout",
+                      "Doesn't matter"],
         },
         {
             "key": "insulated",
@@ -39,6 +70,11 @@ QUESTION_SEQUENCES: dict[str, list[dict]] = {
             "key": "size_preference",
             "text": "Any size preference?",
             "chips": ["Lightweight", "Large capacity", "No preference"],
+        },
+        {
+            "key": "price_max",
+            "text": "What's your budget?",
+            "chips": ["Under $15", "Under $25", "Under $40", "No limit"],
         },
     ],
     "smart_display": [
@@ -127,11 +163,39 @@ CHIP_TO_VALUE: dict[str, dict[str, Any]] = {
         "No preference": "",
     },
     "price_max": {
-        "Under $50": 50,
+        "Under $10":  10,
+        "Under $15":  15,
+        "Under $20":  20,
+        "Under $25":  25,
+        "Under $40":  40,
+        "Under $50":  50,
         "Under $100": 100,
         "Under $150": 150,
         "Under $250": 250,
-        "No limit": None,
+        "No limit":   None,
+    },
+    "material_preference": {
+        "Stainless steel":   "stainless",
+        "BPA-free plastic":  "plastic",
+        "Either is fine":    "any",
+    },
+    "drinking_style": {
+        "FreeSip / hybrid": "freesip",
+        "Straw":            "straw",
+        "Standard cap":     "standard",
+        "Kids spout":       "kids",
+        "Doesn't matter":   "any",
+    },
+    "organizer_material": {
+        "Plastic":         "plastic",
+        "Bamboo":          "bamboo",
+        "Metal":           "metal",
+        "Doesn't matter":  "any",
+    },
+    "visibility_priority": {
+        "Clear / see-through": "clear",
+        "Opaque is fine":      "opaque",
+        "Doesn't matter":      "any",
     },
     "voice_ecosystem": {
         "Alexa":             "alexa",

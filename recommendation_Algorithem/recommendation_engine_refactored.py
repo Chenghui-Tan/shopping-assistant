@@ -462,6 +462,22 @@ def _score_water_bottle(
         score = _apply_rule(score, matches, features["easy_clean"], "easy_clean",
                             penalty=_SOFT_PENALTY)
 
+    # Material preference — soft penalty on mismatch.
+    mat_pref = preferences.get("material_preference")
+    if mat_pref and mat_pref != "any":
+        prod_mat = product.get("bottle_material")
+        if prod_mat is not None:
+            score = _apply_rule(score, matches, prod_mat == mat_pref,
+                                f"material_{mat_pref}", penalty=_SOFT_PENALTY)
+
+    # Drinking style — soft penalty on mismatch.
+    drink_pref = preferences.get("drinking_style")
+    if drink_pref and drink_pref != "any":
+        prod_style = product.get("drinking_style")
+        if prod_style is not None:
+            score = _apply_rule(score, matches, prod_style == drink_pref,
+                                f"drinking_style_{drink_pref}", penalty=_SOFT_PENALTY)
+
     return score, matches
 
 
@@ -528,6 +544,22 @@ def _score_kitchen_organizer(
         score = _apply_rule(score, matches,
                             _title_has(product, "expandable", "set", "8pc", "25pc", "modular"),
                             "easy_install")
+
+    # Material preference — soft penalty on mismatch.
+    mat_pref = preferences.get("organizer_material")
+    if mat_pref and mat_pref != "any":
+        prod_mat = product.get("organizer_material")
+        if prod_mat is not None:
+            score = _apply_rule(score, matches, prod_mat == mat_pref,
+                                f"organiser_material_{mat_pref}", penalty=_SOFT_PENALTY)
+
+    # Visibility — clear is the most common ask. Use as a soft pref.
+    vis_pref = preferences.get("visibility_priority")
+    if vis_pref == "clear":
+        prod_vis = product.get("organizer_visibility")
+        if prod_vis is not None:
+            score = _apply_rule(score, matches, prod_vis == "clear",
+                                "visibility_clear", penalty=_SOFT_PENALTY)
 
     return score, matches
 

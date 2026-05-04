@@ -129,11 +129,15 @@ def _format_product(p: dict, explanation: str) -> dict:
         "score": p.get("_score"),
         # Decision-relevant attributes extracted at load time. Frontend
         # uses these for the comparison view + ProductCard chips.
-        "screen_inches": p.get("screen_inches"),
-        "ecosystems":    p.get("ecosystems"),
-        "has_camera":    p.get("has_camera"),
-        "mounting":      p.get("mounting"),
-        "capacity_oz":   p.get("capacity_oz"),
+        "screen_inches":      p.get("screen_inches"),
+        "ecosystems":         p.get("ecosystems"),
+        "has_camera":         p.get("has_camera"),
+        "mounting":           p.get("mounting"),
+        "capacity_oz":        p.get("capacity_oz"),
+        "bottle_material":    p.get("bottle_material"),
+        "drinking_style":     p.get("drinking_style"),
+        "organizer_material": p.get("organizer_material"),
+        "organizer_visibility": p.get("organizer_visibility"),
         # Pick metadata (only present on /session/curated).
         "pick_label":    p.get("pick_label"),
         "pick_reason":   p.get("pick_reason"),
