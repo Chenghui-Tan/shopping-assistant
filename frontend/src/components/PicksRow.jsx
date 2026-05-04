@@ -114,6 +114,14 @@ export default function PicksRow({ picks, onSelectProduct, isSaved, onToggleSave
             <span>{p.pick_reason}</span>
           </div>
 
+          {p.tradeoff_labels && p.tradeoff_labels.length > 0 && (
+            <div className="tradeoff-pills">
+              {p.tradeoff_labels.map((label) => (
+                <span key={label} className="tradeoff-pill">{label}</span>
+              ))}
+            </div>
+          )}
+
           <PickFacts p={p} />
           <PrefChecks checks={p.pref_checks} />
 

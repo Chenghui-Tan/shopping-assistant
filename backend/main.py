@@ -111,6 +111,76 @@ def _next_question(session: dict) -> dict | None:
     return {"key": key, "text": q["text"], "chips": q["chips"]}
 
 
+def _attach_tradeoff_labels(picks: list[dict]) -> None:
+    """Add factual tradeoff_labels to each pick by comparing them.
+
+    Each label only applies when *true within the actually-shown set*
+    (closes the 'Lowest-cost option in your set' lie the user flagged).
+    Labels are list-typed so a single pick can carry multiple
+    (e.g. 'Cheapest' + 'Most lightweight').
+    """
+    if not picks:
+        return
+    for p in picks:
+        p.setdefault("tradeoff_labels", [])
+
+    # Cheapest in shown set
+    priced = [p for p in picks if p.get("price") is not None]
+    if priced:
+        cheapest = min(priced, key=lambda x: x["price"])
+        # Only label as 'Cheapest' if there's a real spread (>= $2 cheaper).
+        others = [p for p in priced if p is not cheapest]
+        if others and cheapest["price"] + 2 <= min(o["price"] for o in others):
+            cheapest["tradeoff_labels"].append("Cheapest")
+
+    # Most capacity / largest screen / etc.
+    cat = picks[0].get("category")
+    if cat == "water_bottle":
+        with_oz = [p for p in picks if p.get("capacity_oz")]
+        if with_oz:
+            biggest = max(with_oz, key=lambda x: x["capacity_oz"])
+            if any(p.get("capacity_oz", 0) < biggest["capacity_oz"] - 4 for p in with_oz):
+                biggest["tradeoff_labels"].append("Most capacity")
+        # Most leakproof: pick with leak_proof when others don't have it.
+        leakproof = [p for p in picks
+                     if (p.get("features") or {}).get("leak_proof")]
+        non_leakproof = [p for p in picks
+                         if not (p.get("features") or {}).get("leak_proof")]
+        if leakproof and non_leakproof:
+            for p in leakproof:
+                p["tradeoff_labels"].append("Most leakproof")
+        # Lightest: smallest capacity wins (proxy for portability).
+        if with_oz and len(with_oz) >= 2:
+            smallest = min(with_oz, key=lambda x: x["capacity_oz"])
+            if any(p.get("capacity_oz", 0) > smallest["capacity_oz"] + 4 for p in with_oz):
+                smallest["tradeoff_labels"].append("Most portable")
+    elif cat == "smart_display":
+        with_screen = [p for p in picks if p.get("screen_inches")]
+        if with_screen:
+            biggest = max(with_screen, key=lambda x: x["screen_inches"])
+            if any(p.get("screen_inches", 0) < biggest["screen_inches"] - 1
+                   for p in with_screen):
+                biggest["tradeoff_labels"].append("Largest screen")
+        no_camera = [p for p in picks if p.get("has_camera") is False]
+        cam = [p for p in picks if p.get("has_camera") is True]
+        if no_camera and cam:
+            for p in no_camera:
+                p["tradeoff_labels"].append("No camera")
+    elif cat == "kitchen_organizer":
+        clear = [p for p in picks if p.get("organizer_visibility") == "clear"]
+        opaque = [p for p in picks if p.get("organizer_visibility") == "opaque"]
+        if clear and opaque:
+            for p in clear:
+                p["tradeoff_labels"].append("Most see-through")
+
+    # Highest-rated (when meaningful spread)
+    rated = [p for p in picks if p.get("rating")]
+    if len(rated) >= 2:
+        top = max(rated, key=lambda x: x["rating"])
+        if any(p["rating"] < top["rating"] - 0.2 for p in rated):
+            top["tradeoff_labels"].append("Highest rated")
+
+
 def _check(label: str, status: str, detail: str = "") -> dict:
     """Build one row of the preference-match checklist."""
     return {"label": label, "status": status, "detail": detail}
@@ -503,6 +573,9 @@ def recommend(body: RecommendBody):
                 "pick_label":  p.get("pick_label"),
                 "pick_reason": p.get("pick_reason"),
             })
+    # Attach factual trade-off labels (Cheapest, Most capacity, etc.)
+    # computed within the actually-shown picks.
+    _attach_tradeoff_labels(picks)
     return {
         "products":   products,
         "picks":      picks,
@@ -548,6 +621,7 @@ def refine(body: RefineBody):
         if match:
             picks.append({**match, "pick_label": p.get("pick_label"),
                           "pick_reason": p.get("pick_reason")})
+    _attach_tradeoff_labels(picks)
     session_store.add_supplement_log(body.session_id, body.text, result["ai_response"], diff=diff)
 
     return {
