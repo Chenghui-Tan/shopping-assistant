@@ -38,6 +38,7 @@ export default function App() {
   const [stage, setStage] = useState(1)
   const [sessionId, setSessionId] = useState(null)
   const [products, setProducts] = useState([])
+  const [picks, setPicks] = useState([])
   const [supplementLog, setSupplementLog] = useState([])
   const [startData, setStartData] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
@@ -62,14 +63,16 @@ export default function App() {
     setStage(2)
   }
 
-  const handleStage2Complete = (fetchedProducts, relaxationLevel) => {
+  const handleStage2Complete = (fetchedProducts, relaxationLevel, fetchedPicks) => {
     setProducts(fetchedProducts)
+    setPicks(fetchedPicks || [])
     setRelaxation(relaxationLevel || 'strict')
     setStage(3)
   }
 
-  const handleSupplement = (fetchedProducts, aiResponse, relaxationLevel, diff) => {
+  const handleSupplement = (fetchedProducts, aiResponse, relaxationLevel, diff, fetchedPicks) => {
     setProducts(fetchedProducts)
+    setPicks(fetchedPicks || [])
     setRelaxation(relaxationLevel || 'strict')
     setSupplementLog((prev) => [{ aiResponse, diff: diff || {}, timestamp: Date.now() }, ...prev])
   }
@@ -144,6 +147,7 @@ export default function App() {
             <Stage3
               sessionId={sessionId}
               products={products}
+              picks={picks}
               supplementLog={supplementLog}
               onSupplement={handleSupplement}
               onSelectProduct={handleSelectProduct}

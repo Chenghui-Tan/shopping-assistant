@@ -354,10 +354,18 @@ def refine(body: RefineBody):
 
     s = session_store.get_session(body.session_id)
     products, relaxation = _run_recommendations(s)
+    picks_raw = engine.curated_picks(products, s["category"])
+    picks = []
+    for p in picks_raw:
+        match = next((pp for pp in products if pp["product_url"] == p.get("product_url")), None)
+        if match:
+            picks.append({**match, "pick_label": p.get("pick_label"),
+                          "pick_reason": p.get("pick_reason")})
     session_store.add_supplement_log(body.session_id, body.text, result["ai_response"], diff=diff)
 
     return {
         "products":     products,
+        "picks":        picks,
         "ai_response":  result["ai_response"],
         "relaxation":   relaxation,
         "diff":         diff,

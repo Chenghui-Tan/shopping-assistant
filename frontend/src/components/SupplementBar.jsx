@@ -60,7 +60,7 @@ export default function SupplementBar({ sessionId, supplementLog, onSupplement }
     setError(null)
     try {
       const data = await refineRecommendations(sessionId, text.trim())
-      onSupplement(data.products, data.ai_response, data.relaxation, data.diff)
+      onSupplement(data.products, data.ai_response, data.relaxation, data.diff, data.picks)
       setText('')
       document.getElementById('results-top')?.scrollIntoView({ behavior: 'smooth' })
     } catch (e) {

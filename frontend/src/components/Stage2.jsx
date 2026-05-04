@@ -16,19 +16,38 @@ const QUESTION_LAYOUT = {
       key: 'use_case',
       icon: '👨‍👩‍👧',
       text: "What's the main thing you'll use it for?",
+      hint: 'pick one or more',
       chips: ['Cooking', 'Family calendar', 'Entertainment', 'Smart home control'],
+    },
+    {
+      key: 'voice_ecosystem',
+      icon: '🎙️',
+      text: 'Do you already use a voice ecosystem?',
+      chips: ['Alexa', 'Google', 'Apple', "I'm new to this"],
+    },
+    {
+      key: 'placement',
+      icon: '🏠',
+      text: 'Where will it live?',
+      chips: ['Kitchen counter', 'Wall mount', 'Living room', 'Bedroom'],
+    },
+    {
+      key: 'screen_size_priority',
+      icon: '📐',
+      text: 'How big does the screen need to be?',
+      chips: ['Compact (under 8")', 'Mid (8–11")', 'Large (15"+)', "Doesn't matter"],
+    },
+    {
+      key: 'privacy_camera',
+      icon: '🛡️',
+      text: 'Any privacy preference about the camera?',
+      chips: ['Camera is fine', 'Prefer no camera', "Doesn't matter"],
     },
     {
       key: 'price_max',
       icon: '💲',
       text: "What's your budget?",
-      chips: ['Under $50', 'Under $100', 'Under $150', 'No limit'],
-    },
-    {
-      key: 'delivery_days_max',
-      icon: '🚚',
-      text: 'How soon do you need it?',
-      chips: ['ASAP (1–2 days)', 'This week', 'No rush'],
+      chips: ['Under $100', 'Under $150', 'Under $250', 'No limit'],
     },
   ],
   water_bottle: [
@@ -94,8 +113,12 @@ const VALUE_TO_CHIP = {
   },
   insulated:        { true: 'Yes, insulated', false: "No, doesn't matter" },
   size_preference:  { lightweight: 'Lightweight', large: 'Large capacity', '': 'No preference' },
-  price_max:        { 50: 'Under $50', 100: 'Under $100', 150: 'Under $150', null: 'No limit' },
+  price_max:        { 50: 'Under $50', 100: 'Under $100', 150: 'Under $150', 250: 'Under $250', null: 'No limit' },
   delivery_days_max: { 2: 'ASAP (1–2 days)', 7: 'This week', null: 'No rush' },
+  voice_ecosystem:  { alexa: 'Alexa', google: 'Google', apple: 'Apple', none: "I'm new to this" },
+  placement:        { kitchen: 'Kitchen counter', wall: 'Wall mount', living_room: 'Living room', bedroom: 'Bedroom' },
+  screen_size_priority: { compact: 'Compact (under 8")', mid: 'Mid (8–11")', large: 'Large (15"+)', any: "Doesn't matter" },
+  privacy_camera:   { ok: 'Camera is fine', no_camera: 'Prefer no camera', any: "Doesn't matter" },
 }
 
 function chipFromValue(qKey, v) {
@@ -198,7 +221,7 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
         await answerQuestion(sessionId, q.key, v, true)
       }
       const data = await getRecommendations(sessionId)
-      onComplete(data.products, data.relaxation)
+      onComplete(data.products, data.relaxation, data.picks)
     } catch (e) {
       submitted.current = false
       setError('Could not load recommendations. Please try again.')
@@ -247,14 +270,16 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
       )}
 
       {layout.map((q) => {
-        // Multi-select for the smart_display use_case question — the demo
-        // shows multiple feature chips highlighted at once.
-        const multi = category === 'smart_display' && q.key === 'use_case'
+        // Multi-select is opt-in per-question via `hint: 'pick one or more'`.
+        const multi = q.hint === 'pick one or more'
         return (
           <div key={q.key} className="needs-question">
             <div className="needs-q-text">
               <span className="needs-q-icon">{q.icon}</span>
-              <span>{q.text}{multi && <span className="multi-hint"> · pick one or more</span>}</span>
+              <span>
+                {q.text}
+                {q.hint && <span className="multi-hint"> · {q.hint}</span>}
+              </span>
             </div>
             <div className="needs-chip-row">
               {q.chips.map((chip) => (

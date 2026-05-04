@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import ProductCard from './ProductCard'
+import PicksRow from './PicksRow'
 import SupplementBar from './SupplementBar'
 
 const RELAXATION_MESSAGES = {
@@ -19,6 +21,7 @@ const RELAXATION_MESSAGES = {
 export default function Stage3({
   sessionId,
   products,
+  picks,
   supplementLog,
   onSupplement,
   onSelectProduct,
@@ -26,6 +29,8 @@ export default function Stage3({
   savedUrls,
   onToggleSave,
 }) {
+  const [showAll, setShowAll] = useState(false)
+
   if (!products || products.length === 0) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -35,6 +40,8 @@ export default function Stage3({
   }
 
   const note = relaxation && relaxation !== 'strict' ? RELAXATION_MESSAGES[relaxation] : null
+  const isSaved = (p) => savedUrls?.has(p.product_url) || false
+  const onToggleSaveProduct = (p) => onToggleSave?.(p)
 
   return (
     <div>
@@ -48,22 +55,45 @@ export default function Stage3({
         </div>
       )}
 
-      <p className="grid-summary">
-        Showing {products.length} curated options
-        {relaxation === 'strict' && ' · all your filters were honoured'}
-      </p>
-
-      <div className="product-grid" id="results-top">
-        {products.map((product, i) => (
-          <ProductCard
-            key={product.product_url || i}
-            product={product}
-            onSelect={() => onSelectProduct(product)}
-            isSaved={savedUrls?.has(product.product_url) || false}
-            onToggleSave={() => onToggleSave?.(product)}
+      {picks && picks.length > 0 && (
+        <>
+          <p className="grid-summary">
+            Three picks chosen to differ from each other —
+            same constraints, different trade-offs.
+          </p>
+          <PicksRow
+            picks={picks}
+            onSelectProduct={onSelectProduct}
+            isSaved={isSaved}
+            onToggleSave={onToggleSaveProduct}
           />
-        ))}
+        </>
+      )}
+
+      <div className="show-all-row" id="results-top">
+        <button
+          className="btn-ghost"
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll
+            ? '▲ Hide other options'
+            : `▼ Show all ${products.length} options`}
+        </button>
       </div>
+
+      {showAll && (
+        <div className="product-grid">
+          {products.map((product, i) => (
+            <ProductCard
+              key={product.product_url || i}
+              product={product}
+              onSelect={() => onSelectProduct(product)}
+              isSaved={savedUrls?.has(product.product_url) || false}
+              onToggleSave={() => onToggleSave?.(product)}
+            />
+          ))}
+        </div>
+      )}
 
       <SupplementBar
         sessionId={sessionId}
