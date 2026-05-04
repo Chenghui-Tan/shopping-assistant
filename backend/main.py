@@ -744,70 +744,88 @@ def _smart_display_lifecycle(prefs: dict) -> dict:
 
 
 def _water_bottle_lifecycle(prefs: dict) -> dict:
+    """Realistic post-purchase support for a regular (dumb) water bottle.
+
+    The previous version implied automatic refill tracking, which is
+    misleading — a normal bottle can't sense anything. The new copy
+    is explicit about what's manual vs phone-based vs reorder-driven.
+    """
     is_gym     = _has(prefs, "use_case", "gym")
-    is_daily   = _has(prefs, "use_case", "daily")
     is_outdoor = _has(prefs, "use_case", "outdoor")
     is_kids    = _has(prefs, "use_case", "kids")
 
     if is_gym:
         header   = "Gym & Hydration"
         schedule = [
-            {"time": "7:00 AM",  "label": "Morning workout — 32oz before"},
-            {"time": "12:30 PM", "label": "Refill at lunch"},
-            {"time": "5:00 PM",  "label": "Evening run"},
+            {"time": "7:00 AM",  "label": "Pre-workout — drink 16oz on waking"},
+            {"time": "Workout", "label": "Sip every 15 min during training"},
+            {"time": "Post",    "label": "Refill before commute home"},
         ]
-        video    = {"title": "Workout reminder: Hydrate before, during, after",
-                    "subtitle": "Coaching tips synced to your run"}
+        video    = {"title": "Workout hydration: before, during, after",
+                    "subtitle": "Evidence-based targets — 3-min watch"}
     elif is_outdoor:
         header   = "Outdoor & Trail"
         schedule = [
-            {"time": "Pre-trip", "label": "Fill 64oz; freeze half overnight"},
-            {"time": "On trail", "label": "Sip every 20 min — stay ahead of thirst"},
-            {"time": "Return",   "label": "Rinse, air-dry, restock"},
+            {"time": "Pre-trip", "label": "Fill night before; freeze half"},
+            {"time": "On trail", "label": "Sip every 20 min, before thirst"},
+            {"time": "Return",   "label": "Rinse + air-dry upside down"},
         ]
-        video    = {"title": "Trail tips: Carry capacity vs weight",
+        video    = {"title": "Trail tips: capacity vs weight",
                     "subtitle": "How much water for an 8-hour hike"}
     elif is_kids:
         header   = "Kids' Hydration"
         schedule = [
-            {"time": "8:00 AM",  "label": "Pack with breakfast — fill at the bus stop"},
-            {"time": "12:00 PM", "label": "Lunchtime refill at school"},
-            {"time": "5:30 PM",  "label": "After-school sport — sip every 20 min"},
+            {"time": "Morning", "label": "Fill at breakfast — pack in bag"},
+            {"time": "Lunch",   "label": "Refill at school water fountain"},
+            {"time": "After",   "label": "Top up before practice / playdate"},
         ]
         video    = {"title": "Kid-friendly hydration without the sugar",
-                    "subtitle": "Simple flavours that get them drinking water"}
-    else:  # daily / default
+                    "subtitle": "Simple flavours that get them drinking"}
+    else:  # daily
         header   = "Daily Hydration"
         schedule = [
-            {"time": "Morning",  "label": "Start with a full bottle on the desk"},
-            {"time": "Midday",   "label": "Refill before lunch"},
-            {"time": "Evening",  "label": "Top off; reduce caffeine"},
+            {"time": "Morning", "label": "Start with a full bottle on the desk"},
+            {"time": "Midday",  "label": "Refill before lunch"},
+            {"time": "Evening", "label": "Top off; reduce caffeine"},
         ]
         video    = {"title": "How much water do you actually need?",
                     "subtitle": "Evidence-based daily targets"}
 
     menu = [
         {"meal": "Goal",     "label": "100 oz / day" if not is_kids else "60 oz / day"},
-        {"meal": "Reminder", "label": "Sip every 20 minutes"},
+        {"meal": "Self-check", "label": "Pee colour: pale = good, dark = catch up"},
         {"meal": "Tonight",  "label": "Lemon-mint infusion" if not is_kids else "Sliced strawberries in water"},
     ]
 
+    # Cards lean honest: phone / manual / restock — not 'the bottle knows'.
     cards = [
-        {"icon": "💧", "title": "Hydration Tracker",
-         "body": "Log every refill; nudges you when you're falling behind your goal."},
+        {"icon": "🔔", "title": "Phone reminders",
+         "body": "Set 2-hour reminders on your phone — the bottle is dumb, the schedule is yours."},
     ]
     if is_gym:
-        cards.append({"icon": "🏃", "title": "Workout Companion",
-                      "body": "Sync sessions and remind you to top up before/during/after each workout."})
-    if is_outdoor:
-        cards.append({"icon": "🧭", "title": "Trip Planner",
-                      "body": "Estimate carry capacity for hikes; auto-tracks usage rate."})
-    if is_kids:
-        cards.append({"icon": "🎨", "title": "Kid Mode",
-                      "body": "Colour-coded refills, gentle reminders, and progress stickers."})
+        cards.append({"icon": "🎒", "title": "Gym-bag checklist",
+                      "body": "Bottle · towel · post-workout snack · lock — never forget the basics."})
+        cards.append({"icon": "🔁", "title": "Replacement parts",
+                      "body": "FreeSip lids and straws wear out — reorder a 2-pack every 6 months."})
+    elif is_outdoor:
+        cards.append({"icon": "🗺️", "title": "Trip planner",
+                      "body": "Map water sources; estimate refills per hour for your hike length."})
+        cards.append({"icon": "🔁", "title": "Replacement parts",
+                      "body": "Carry a spare cap and o-ring — small parts, big reliability."})
+    elif is_kids:
+        cards.append({"icon": "🎨", "title": "Sticker chart",
+                      "body": "Print a 'I drank my water' chart; one sticker per refill — kids love it."})
+        cards.append({"icon": "🔁", "title": "Spout / straw refresh",
+                      "body": "Kids spouts get chewed — keep a spare set on hand."})
+    else:
+        cards.append({"icon": "📝", "title": "Manual refill log",
+                      "body": "Tap +1 in your phone's notes per refill — the simple version of a tracker."})
+        cards.append({"icon": "🔁", "title": "Restock lids / straws",
+                      "body": "Replacement parts wear faster than the bottle — keep spares."})
+
     if len(cards) < 3:
-        cards.append({"icon": "🍋", "title": "Flavor Ideas",
-                      "body": "Citrus, herbal, and electrolyte rotations so plain water never gets boring."})
+        cards.append({"icon": "🍋", "title": "Flavor ideas",
+                      "body": "Citrus, cucumber-mint, electrolyte powders — rotate so it doesn't get boring."})
     return {"header": header, "schedule": schedule, "menu": menu,
             "video": video, "cards": cards[:3]}
 
