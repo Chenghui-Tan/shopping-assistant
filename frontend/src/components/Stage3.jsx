@@ -28,6 +28,8 @@ export default function Stage3({
   relaxation,
   savedUrls,
   onToggleSave,
+  compareUrls,
+  onToggleCompare,
 }) {
   const [showAll, setShowAll] = useState(false)
 
@@ -66,6 +68,8 @@ export default function Stage3({
             onSelectProduct={onSelectProduct}
             isSaved={isSaved}
             onToggleSave={onToggleSaveProduct}
+            isCompared={(p) => compareUrls?.has(p.product_url) || false}
+            onToggleCompare={onToggleCompare}
           />
         </>
       )}
@@ -90,6 +94,8 @@ export default function Stage3({
               onSelect={() => onSelectProduct(product)}
               isSaved={savedUrls?.has(product.product_url) || false}
               onToggleSave={() => onToggleSave?.(product)}
+              isCompared={compareUrls?.has(product.product_url) || false}
+              onToggleCompare={() => onToggleCompare?.(product)}
             />
           ))}
         </div>

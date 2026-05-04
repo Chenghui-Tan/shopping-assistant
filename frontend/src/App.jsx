@@ -4,6 +4,7 @@ import Stage2 from './components/Stage2'
 import Stage3 from './components/Stage3'
 import Stage4 from './components/Stage4'
 import Stage5 from './components/Stage5'
+import ComparisonView from './components/ComparisonView'
 import { saveProduct } from './api'
 
 const SCENE_META = {
@@ -46,6 +47,22 @@ export default function App() {
   const [openingTurn, setOpeningTurn] = useState(null)
   const [relaxation, setRelaxation] = useState('strict')
   const [savedUrls, setSavedUrls] = useState(new Set())
+  const [compareUrls, setCompareUrls] = useState([])  // ordered list, max 3
+  const [showCompare, setShowCompare] = useState(false)
+
+  const toggleCompare = useCallback((product) => {
+    const url = product?.product_url
+    if (!url) return
+    setCompareUrls((prev) => {
+      if (prev.includes(url)) return prev.filter((u) => u !== url)
+      if (prev.length >= 3) return prev  // hard cap at 3
+      return [...prev, url]
+    })
+  }, [])
+
+  const compareProducts = compareUrls
+    .map((u) => products.find((p) => p.product_url === u))
+    .filter(Boolean)
 
   const toggleSave = useCallback(async (product) => {
     if (!sessionId || !product?.product_url) return
@@ -156,6 +173,8 @@ export default function App() {
               relaxation={relaxation}
               savedUrls={savedUrls}
               onToggleSave={toggleSave}
+              compareUrls={new Set(compareUrls)}
+              onToggleCompare={toggleCompare}
             />
           )}
           {stage === 4 && (
@@ -173,6 +192,32 @@ export default function App() {
       </div>
 
       <div className="scene-caption">{meta.caption}</div>
+
+      {/* Sticky compare bar visible whenever there are 2+ products selected
+          to compare. Available across Scenes 3-5 so the user can compare from
+          either the picks row, the full grid, or after seeing the why-page. */}
+      {compareUrls.length >= 2 && stage >= 3 && (
+        <div className="compare-bar">
+          <span>{compareUrls.length} of 3 selected to compare</span>
+          <button className="btn-ghost" onClick={() => setCompareUrls([])}>
+            Clear
+          </button>
+          <button className="btn-primary" onClick={() => setShowCompare(true)}>
+            Compare side-by-side →
+          </button>
+        </div>
+      )}
+
+      {showCompare && (
+        <ComparisonView
+          products={compareProducts}
+          onClose={() => setShowCompare(false)}
+          onSelectProduct={(p) => {
+            setShowCompare(false)
+            handleSelectProduct(p)
+          }}
+        />
+      )}
     </div>
   )
 }

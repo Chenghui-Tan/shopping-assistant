@@ -64,7 +64,7 @@ function featureTags(product) {
   return tags.slice(0, 2)
 }
 
-export default function ProductCard({ product, onSelect, isSaved, onToggleSave }) {
+export default function ProductCard({ product, onSelect, isSaved, onToggleSave, isCompared, onToggleCompare }) {
   const bullets = tileBullets(product)
   const tags = featureTags(product)
 
@@ -117,12 +117,23 @@ export default function ProductCard({ product, onSelect, isSaved, onToggleSave }
         )}
         <div className="tile-footer">
           <span className="tile-price">${product.price?.toFixed(2)}</span>
-          <button
-            className="see-why-btn"
-            onClick={(e) => { e.stopPropagation(); onSelect() }}
-          >
-            See why
-          </button>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {onToggleCompare && (
+              <button
+                className={'compare-btn ' + (isCompared ? 'compare-btn-on' : '')}
+                onClick={(e) => { e.stopPropagation(); onToggleCompare() }}
+                title={isCompared ? 'Remove from compare' : 'Add to compare'}
+              >
+                {isCompared ? '✓' : '⇄'}
+              </button>
+            )}
+            <button
+              className="see-why-btn"
+              onClick={(e) => { e.stopPropagation(); onSelect() }}
+            >
+              See why
+            </button>
+          </div>
         </div>
       </div>
     </div>

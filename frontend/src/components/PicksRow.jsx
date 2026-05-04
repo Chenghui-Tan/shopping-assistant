@@ -41,7 +41,7 @@ const BADGE_CLASS = {
   'Best Visibility Pick':  'pick-badge-stretch',
 }
 
-export default function PicksRow({ picks, onSelectProduct, isSaved, onToggleSave }) {
+export default function PicksRow({ picks, onSelectProduct, isSaved, onToggleSave, isCompared, onToggleCompare }) {
   if (!picks || picks.length === 0) return null
 
   return (
@@ -102,12 +102,23 @@ export default function PicksRow({ picks, onSelectProduct, isSaved, onToggleSave
 
           <div className="pick-footer">
             <span className="pick-price">${p.price?.toFixed(2)}</span>
-            <button
-              className="see-why-btn"
-              onClick={(e) => { e.stopPropagation(); onSelectProduct(p) }}
-            >
-              See why
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {onToggleCompare && (
+                <button
+                  className={'compare-btn ' + (isCompared?.(p) ? 'compare-btn-on' : '')}
+                  onClick={(e) => { e.stopPropagation(); onToggleCompare(p) }}
+                  title={isCompared?.(p) ? 'Remove from compare' : 'Add to compare'}
+                >
+                  {isCompared?.(p) ? '✓' : '⇄'}
+                </button>
+              )}
+              <button
+                className="see-why-btn"
+                onClick={(e) => { e.stopPropagation(); onSelectProduct(p) }}
+              >
+                See why
+              </button>
+            </div>
           </div>
         </div>
       ))}
