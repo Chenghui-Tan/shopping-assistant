@@ -575,6 +575,25 @@ def _empathic_reply(category: str, prefs: dict, raw: str) -> str:
     if isinstance(use_case, list):
         use_case = use_case[0] if use_case else None
 
+    # 'Just the category name' inputs (e.g. "water bottle") shouldn't get
+    # a frustration acknowledgement — they're a category statement, not a
+    # complaint. Detect short non-frustration inputs and use a neutral
+    # opener that asks for context.
+    raw_lower = (raw or "").lower().strip()
+    short_input = len(raw_lower.split()) <= 3
+    has_pain = any(kw in raw_lower for kw in (
+        "frustrat", "annoying", "small", "leak", "spill", "hate", "tired",
+        "messy", "chaos", "hunting", "lose", "lost", "heavy", "bulky",
+    ))
+    if short_input and not has_pain:
+        nice = {
+            "water_bottle":      "Got it — let's narrow down the right water bottle for you.",
+            "smart_display":     "Good — let's find the right smart display for your space.",
+            "kitchen_organizer": "Got it — let's find an organiser that fits your kitchen.",
+        }
+        if category in nice:
+            return nice[category] + " A few quick questions next."
+
     if category == "smart_display":
         if use_case == "cooking":
             return ("That sounds frustrating — cooking with one eye on a tiny phone screen "
@@ -611,6 +630,52 @@ def _empathic_reply(category: str, prefs: dict, raw: str) -> str:
     return "That sounds frustrating. Let's figure out what would actually make this easier."
 
 
+_CATEGORY_KEYWORD_PATTERNS: dict[str, list[str]] = {
+    "water_bottle": [
+        r"\bwater\s+bottle\b", r"\bbottle\b", r"\bhydrat", r"\bdrink",
+        r"\bowala\b", r"\bstanley\b", r"\bthermos\b", r"\bgym\s+bottle\b",
+        r"\bsippy\b", r"\bstraw\b",
+    ],
+    "smart_display": [
+        r"\bsmart\s+display\b", r"\bkitchen\s+display\b", r"\becho\s+show\b",
+        r"\bnest\s+hub\b", r"\balexa\b", r"\bgoogle\s+display\b",
+        r"\bdigital\s+(?:calendar|frame|planner)\b", r"\btablet\s+stand\b",
+        r"\brecipe\s+screen\b",
+        # Common "I cook with my phone, the screen is too small" framings.
+        # These match smart_display because the natural answer is a kitchen
+        # display, not a kitchen organiser.
+        r"\bphone\s+screen\b", r"\bscreen\s+(?:too\s+)?small\b",
+        r"\bfollow(?:ing)?\s+recipes?\b", r"\brecipes?\s+on\s+(?:my\s+)?phone\b",
+        r"\bhands[-\s]?free\s+(?:cooking|recipe)\b",
+    ],
+    "kitchen_organizer": [
+        r"\bkitchen\s+organi[sz]er\b", r"\borgani[sz]er\b", r"\bdrawer\s+organi",
+        r"\bcabinet\b", r"\bcountertop\b", r"\bpantry\b", r"\bspice\s+rack\b",
+        r"\blazy\s+susan\b", r"\bbrightroom\b",
+    ],
+}
+
+
+def _classify_category(text: str) -> str | None:
+    """Best-effort category classifier from raw text. Used as a fallback
+    when the LLM is unreachable — without this, plain inputs like
+    'water bottle' or 'echo show 8' come back as 'unknown' and the user
+    sees a generic empathy reply instead of a category-specific one.
+    """
+    if not text:
+        return None
+    lower = text.lower()
+    # Score each category by how many patterns match. Tied scores prefer
+    # smart_display > water_bottle > kitchen_organizer (model fanciness).
+    scores = {cat: 0 for cat in _CATEGORY_KEYWORD_PATTERNS}
+    for cat, pats in _CATEGORY_KEYWORD_PATTERNS.items():
+        for p in pats:
+            if _re.search(p, lower):
+                scores[cat] += 1
+    best_cat = max(scores, key=lambda c: scores[c])
+    return best_cat if scores[best_cat] > 0 else None
+
+
 @app.post("/session/start")
 def start_session(body: StartBody):
     # Best-effort LLM parse. If the API key is a placeholder or the call fails
@@ -623,6 +688,14 @@ def start_session(body: StartBody):
     except Exception:
         category = "unknown"
         preferences = {}
+
+    # Deterministic category fallback when the LLM didn't classify it.
+    # 'water bottle' as raw input should land on water_bottle directly,
+    # not on the generic 'pick a category' chips screen.
+    if category in ("unknown", "", None):
+        inferred = _classify_category(body.text)
+        if inferred:
+            category = inferred
 
     if category == "unknown" or not category:
         category = ""
