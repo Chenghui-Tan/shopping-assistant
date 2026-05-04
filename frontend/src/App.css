@@ -732,6 +732,57 @@ textarea::placeholder { color: var(--text-muted); }
 .why-product-rating { color: #f59e0b; font-size: 13px; }
 .why-product-rating .rating-num { color: var(--text-secondary); margin-left: 6px; }
 
+.why-quote {
+  background: #f8fafc;
+  border-left: 4px solid var(--accent-blue);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.why-quote-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.why-quote-text {
+  font-size: 15px;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+.why-quote-bridge {
+  font-size: 13.5px;
+  color: var(--accent-blue-2);
+  font-weight: 500;
+}
+
+.refine-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 12.5px;
+}
+.refine-suggestions-label {
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.refine-chip {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12.5px;
+  color: var(--accent-blue-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.refine-chip:hover { border-color: var(--accent-blue); background: #eff6ff; }
+.refine-chip:disabled { opacity: 0.55; cursor: not-allowed; }
+
 .why-summary {
   background: #f8fafc;
   border-left: 3px solid var(--accent-blue);

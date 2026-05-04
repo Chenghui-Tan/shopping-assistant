@@ -324,6 +324,10 @@ def recommend(body: RecommendBody):
         "products":   products,
         "picks":      picks,
         "relaxation": relaxation,
+        # Echo back the user's raw frustration text so the frontend can
+        # quote it on the 'Why this fits' page — turns generic explanation
+        # bullets into a personalised "You said X, this addresses it".
+        "raw_input":  s.get("raw_input"),
     }
 
 

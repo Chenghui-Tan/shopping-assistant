@@ -99,6 +99,7 @@ export default function Stage3({
         sessionId={sessionId}
         supplementLog={supplementLog}
         onSupplement={onSupplement}
+        category={products[0]?.category}
       />
     </div>
   )

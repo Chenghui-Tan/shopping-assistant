@@ -1,6 +1,29 @@
 import { useState } from 'react'
 import { refineRecommendations } from '../api'
 
+// Category-aware quick-refine chips. Far more useful than the generic
+// "under $20" placeholder that doesn't make sense for smart displays.
+const REFINE_SUGGESTIONS = {
+  smart_display: [
+    'larger screen', 'works with Google', 'no camera',
+    'best for small counter', 'under $150',
+  ],
+  water_bottle: [
+    'leakproof', 'larger capacity', 'no plastic',
+    'kid-friendly', 'under $20',
+  ],
+  kitchen_organizer: [
+    'modular', 'fits deep cabinets', 'no assembly',
+    'expandable', 'under $15',
+  ],
+}
+
+const REFINE_PLACEHOLDER = {
+  smart_display:    'Refine: "larger screen", "works with Google", "no camera"…',
+  water_bottle:     'Refine: "leakproof", "larger capacity", "no plastic"…',
+  kitchen_organizer:'Refine: "modular", "fits deep cabinets", "expandable"…',
+}
+
 function LoadingDots() {
   return <span className="loading-dots"><span /><span /><span /></span>
 }
@@ -49,17 +72,21 @@ function DiffRows({ diff }) {
   )
 }
 
-export default function SupplementBar({ sessionId, supplementLog, onSupplement }) {
+export default function SupplementBar({ sessionId, supplementLog, onSupplement, category }) {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const suggestions = REFINE_SUGGESTIONS[category] || []
+  const placeholder = REFINE_PLACEHOLDER[category]
+    || 'Refine: e.g. "more options", "different style"…'
 
-  const handleSubmit = async () => {
-    if (!text.trim() || loading) return
+  const handleSubmit = async (override) => {
+    const value = (override ?? text).trim()
+    if (!value || loading) return
     setLoading(true)
     setError(null)
     try {
-      const data = await refineRecommendations(sessionId, text.trim())
+      const data = await refineRecommendations(sessionId, value)
       onSupplement(data.products, data.ai_response, data.relaxation, data.diff, data.picks)
       setText('')
       document.getElementById('results-top')?.scrollIntoView({ behavior: 'smooth' })
@@ -99,19 +126,35 @@ export default function SupplementBar({ sessionId, supplementLog, onSupplement }
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
-          placeholder='Refine: "under $20", "faster delivery", "actually for outdoor use"'
+          placeholder={placeholder}
           disabled={loading}
           className="text-input"
         />
         <button
           className="btn-primary"
-          onClick={handleSubmit}
+          onClick={() => handleSubmit()}
           disabled={!text.trim() || loading}
           style={{ padding: '11px 18px', whiteSpace: 'nowrap' }}
         >
           {loading ? <LoadingDots /> : 'Update →'}
         </button>
       </div>
+
+      {suggestions.length > 0 && (
+        <div className="refine-suggestions">
+          <span className="refine-suggestions-label">Try:</span>
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              className="refine-chip"
+              onClick={() => handleSubmit(s)}
+              disabled={loading}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <p className="error-msg" style={{ marginTop: 8 }}>{error}</p>

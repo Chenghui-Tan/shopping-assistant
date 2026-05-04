@@ -89,7 +89,19 @@ function deriveTradeoff(product) {
   return null
 }
 
-export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onToggleSave }) {
+// Quote the first ~120 chars of the user's frustration so the why-page
+// reads like an answer to their actual words, not a generic product page.
+function shortenQuote(s, max = 140) {
+  if (!s) return null
+  s = s.trim()
+  if (s.length <= max) return s
+  // Cut at last word boundary before max.
+  const slice = s.slice(0, max)
+  const lastSpace = slice.lastIndexOf(' ')
+  return slice.slice(0, lastSpace > max - 30 ? lastSpace : max).trim() + '…'
+}
+
+export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onToggleSave, rawInput }) {
   if (!product) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -133,10 +145,24 @@ export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onTog
         </div>
       </div>
 
-      {summary && <p className="why-summary">{summary}</p>}
+      {rawInput && (
+        <div className="why-quote">
+          <div className="why-quote-label">You said</div>
+          <div className="why-quote-text">"{shortenQuote(rawInput)}"</div>
+          <div className="why-quote-bridge">
+            → This {product.category === 'smart_display'
+              ? 'smart display'
+              : product.category === 'water_bottle'
+              ? 'bottle'
+              : 'organiser'} addresses that with:
+          </div>
+        </div>
+      )}
+
+      {!rawInput && summary && <p className="why-summary">{summary}</p>}
 
       <h3 className="why-headline">
-        <span className="why-check">✓</span> This option is recommended because:
+        <span className="why-check">✓</span> {rawInput ? 'Specifically:' : 'This option is recommended because:'}
       </h3>
       <ul className="why-list">
         {reasons.map((r, i) => <li key={i}>{r}</li>)}

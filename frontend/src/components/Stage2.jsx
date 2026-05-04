@@ -221,7 +221,7 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
         await answerQuestion(sessionId, q.key, v, true)
       }
       const data = await getRecommendations(sessionId)
-      onComplete(data.products, data.relaxation, data.picks)
+      onComplete(data.products, data.relaxation, data.picks, data.raw_input)
     } catch (e) {
       submitted.current = false
       setError('Could not load recommendations. Please try again.')

@@ -41,6 +41,7 @@ export default function App() {
   const [picks, setPicks] = useState([])
   const [supplementLog, setSupplementLog] = useState([])
   const [startData, setStartData] = useState(null)
+  const [rawInput, setRawInput] = useState(null)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [openingTurn, setOpeningTurn] = useState(null)
   const [relaxation, setRelaxation] = useState('strict')
@@ -63,10 +64,11 @@ export default function App() {
     setStage(2)
   }
 
-  const handleStage2Complete = (fetchedProducts, relaxationLevel, fetchedPicks) => {
+  const handleStage2Complete = (fetchedProducts, relaxationLevel, fetchedPicks, raw) => {
     setProducts(fetchedProducts)
     setPicks(fetchedPicks || [])
     setRelaxation(relaxationLevel || 'strict')
+    if (raw) setRawInput(raw)
     setStage(3)
   }
 
@@ -163,6 +165,7 @@ export default function App() {
               onSeeLifecycle={handleSeeLifecycle}
               isSaved={selectedProduct && savedUrls.has(selectedProduct.product_url)}
               onToggleSave={toggleSave}
+              rawInput={rawInput}
             />
           )}
           {stage === 5 && <Stage5 sessionId={sessionId} />}
