@@ -75,6 +75,165 @@ class _SupplementResponse(BaseModel):
     model_config = {"extra": "ignore"}
 
 
+import re as _re
+
+# Deterministic parser for common refinement phrases. Used when the LLM
+# is unreachable (placeholder API key) or returns empty / invalid data,
+# so the refine bar still has visible effect on recommendations. Each
+# match is keyed off the user's *current* category so the same word
+# means the right thing in different contexts (e.g. 'plastic' is a
+# bottle material AND an organiser material).
+
+# (regex, key, value) — order matters: first match wins per key. Keys
+# follow the same vocabulary the engine reads from preferences.
+_SUPP_RULES_GLOBAL: list[tuple[str, str, object]] = [
+    # Price ceilings: 'under $80', 'less than $100', '$50 max', '$50 or less'
+    (r"(?:under|less than|below|cheaper than)\s*\$?\s*(\d+)",      "price_max", "_int"),
+    (r"\$?\s*(\d+)\s*(?:max|maximum|or less|cap|budget)",           "price_max", "_int"),
+    # Delivery
+    (r"\b(?:asap|today|tomorrow|fast|fastest)\s+delivery\b",       "delivery_days_max", 2),
+    (r"\bthis\s+week\b",                                            "delivery_days_max", 7),
+    # Privacy / camera (smart_display)
+    (r"\bno\s+camera\b|\bwithout\s+camera\b|\bcamera[-\s]?free\b", "privacy_camera",  "no_camera"),
+    (r"\bcamera\s+ok\b|\bcamera\s+is\s+fine\b",                    "privacy_camera",  "ok"),
+    # Voice ecosystem (smart_display)
+    (r"\b(?:works\s+with\s+)?google\b|\bnest\s+hub\b",             "voice_ecosystem", "google"),
+    (r"\b(?:works\s+with\s+)?alexa\b|\becho\s+show\b",             "voice_ecosystem", "alexa"),
+    (r"\b(?:works\s+with\s+)?apple\b|\bhomepod\b|\bsiri\b",        "voice_ecosystem", "apple"),
+    # Leak-proof (water_bottle) — implicit signal
+    (r"\bleak[-\s]?proof\b|\bno\s+(?:spill|leak)\b|\bspillproof\b","leak_proof_preferred", True),
+    (r"\bleaks?\b|\bspills?\b",                                    "leak_proof_preferred", True),
+]
+
+# Category-specific rules — applied only when session category matches.
+_SUPP_RULES_BY_CAT: dict[str, list[tuple[str, str, object]]] = {
+    "smart_display": [
+        # Screen size priority
+        (r"\blarger?\s+screen\b|\bbigger\s+screen\b|\b15\b|\b21\b", "screen_size_priority", "large"),
+        (r"\bsmaller\s+screen\b|\bcompact\b|\bsmall\s+counter\b",  "screen_size_priority", "compact"),
+        (r"\bmid\b|\b8\s*inch\b|\b10\s*inch\b|\b11\s*inch\b",       "screen_size_priority", "mid"),
+        # Placement
+        (r"\bwall[-\s]?(mount|mountable)\b",                        "placement", "wall"),
+        (r"\bkitchen\s+counter\b|\bkitchen\b",                      "placement", "kitchen"),
+        (r"\bliving\s+room\b",                                      "placement", "living_room"),
+        (r"\bbedroom\b",                                            "placement", "bedroom"),
+        # Use case (multi-select-aware)
+        (r"\bcooking\b|\brecipe\b",                                 "use_case", "cooking"),
+        (r"\bfamily\s+calendar\b|\bcalendar\b|\bschedule\b",        "use_case", "family"),
+        (r"\bentertain(?:ment)?\b|\bstreaming\b|\bvideos?\b",       "use_case", "entertainment"),
+        (r"\bsmart\s+home\b|\bcontrol\s+lights\b",                  "use_case", "smart_home"),
+    ],
+    "water_bottle": [
+        # Size
+        (r"\blarger?\b|\bbigger\b|\bmore\s+capacity\b|\b32\s*oz\b|\b40\s*oz\b|\b64\s*oz\b",
+                                                                    "size_preference", "large"),
+        (r"\blightweight\b|\blight\b|\bportable\b|\bsmaller\b",     "size_preference", "lightweight"),
+        # Insulation
+        (r"\binsulated\b|\bdouble[-\s]wall\b|\bvacuum\b|\bkeeps?\s+(?:cold|hot)\b",
+                                                                    "insulated", True),
+        (r"\bnot?\s+insulated\b|\bplain\s+plastic\b",               "insulated", False),
+        # Material
+        (r"\bstainless\b|\bsteel\b|\bmetal\s+bottle\b",             "material_preference", "stainless"),
+        (r"\bbpa[-\s]?free\b|\btritan\b|\bplastic\b",               "material_preference", "plastic"),
+        # Drinking style
+        (r"\bfreesip\b|\bhybrid\b",                                 "drinking_style", "freesip"),
+        (r"\bstraw\b",                                              "drinking_style", "straw"),
+        (r"\bspout\b|\bsippy\b",                                    "drinking_style", "kids"),
+        (r"\bstandard\s+cap\b|\bscrew\s+cap\b",                     "drinking_style", "standard"),
+        # Use case
+        (r"\bgym\b|\bworkout\b|\btraining\b",                       "use_case", "gym"),
+        (r"\boutdoor\b|\bhik(?:e|ing)\b|\btrail\b",                 "use_case", "outdoor"),
+        (r"\bkids?\b|\bchildren\b|\bschool\b",                      "use_case", "kids"),
+        (r"\bdaily\b|\beveryday\b|\boffice\b|\bdesk\b",             "use_case", "daily"),
+    ],
+    "kitchen_organizer": [
+        # Structure
+        (r"\bstackable\b|\btier\b|\b3[-\s]?tier\b",                 "structure_type", "stackable"),
+        (r"\bdrawer\b|\bflatware\b|\bcompartment\b",                "structure_type", "drawer"),
+        (r"\bbin\b|\bbasket\b",                                     "structure_type", "bin"),
+        (r"\bexpandable\b|\bmodular\b",                             "structure_type", "expandable"),
+        (r"\blazy\s+susan\b|\bturn\s+table\b",                      "structure_type", "lazy_susan"),
+        # Material
+        (r"\bbamboo\b|\bwood(?:en)?\b",                             "organizer_material", "bamboo"),
+        (r"\bmetal\b|\bsteel\b|\bwire\b",                           "organizer_material", "metal"),
+        (r"\bplastic\b|\bpetg\b",                                   "organizer_material", "plastic"),
+        # Visibility
+        (r"\bclear\b|\btransparent\b|\bsee[-\s]?through\b",         "visibility_priority", "clear"),
+        (r"\bopaque\b|\bsolid\b",                                   "visibility_priority", "opaque"),
+        # Area
+        (r"\bcabinets?\b|\bshelves?\b",                             "use_area", "cabinet"),
+        (r"\bcounter(?:top)?\b",                                    "use_area", "countertop"),
+        (r"\bunder\s+(?:the\s+)?sink\b",                            "use_area", "under_sink"),
+        # Pain
+        (r"\bnot\s+enough\s+space\b|\btight\b|\bcrammed\b",         "pain_point", "not_enough_space"),
+        (r"\bhard\s+to\s+find\b|\blose\s+(?:it|things)\b|\bvisib",   "pain_point", "hard_to_find_things"),
+    ],
+}
+
+
+def _deterministic_parse_supplement(text: str, category: str | None) -> dict:
+    """Pattern-match the user's refine text into preference updates.
+
+    Returns {preference_updates: {...}, ai_response: '...'} matching the
+    contract of claude_client.parse_supplement. Empty updates dict means
+    'nothing recognised' — caller should keep prior preferences.
+    """
+    if not text:
+        return {"preference_updates": {}, "ai_response": ""}
+    lower = text.lower()
+    updates: dict = {}
+
+    # Helper: apply rules in order; first match per key wins.
+    def apply(rules: list[tuple[str, str, object]]) -> None:
+        for pat, key, val in rules:
+            if key in updates:
+                continue
+            m = _re.search(pat, lower)
+            if not m:
+                continue
+            if val == "_int":
+                try:
+                    updates[key] = int(m.group(1))
+                except (IndexError, ValueError):
+                    continue
+            else:
+                updates[key] = val
+
+    apply(_SUPP_RULES_GLOBAL)
+    apply(_SUPP_RULES_BY_CAT.get(category or "", []))
+
+    # Construct an honest acknowledgement so the user sees what changed.
+    if updates:
+        bits = []
+        for k, v in updates.items():
+            label = {
+                "price_max": f"max price ${v}",
+                "delivery_days_max": f"delivery ≤ {v}d",
+                "screen_size_priority": f"screen: {v}",
+                "voice_ecosystem": f"ecosystem: {v}",
+                "privacy_camera": "privacy: no camera" if v == "no_camera" else f"privacy: {v}",
+                "leak_proof_preferred": "leak-resistant",
+                "size_preference": f"size: {v}",
+                "insulated": "insulated" if v else "no insulation",
+                "material_preference": f"material: {v}",
+                "drinking_style": f"drinking: {v}",
+                "use_case": f"use: {v}",
+                "placement": f"placement: {v}",
+                "structure_type": f"structure: {v}",
+                "organizer_material": f"material: {v}",
+                "visibility_priority": f"visibility: {v}",
+                "use_area": f"area: {v}",
+                "pain_point": f"pain: {v}",
+            }.get(k, f"{k}: {v}")
+            bits.append(label)
+        ai = "Got it — updating " + ", ".join(bits) + "."
+    else:
+        ai = (f'Hmm, I couldn\'t pull a structured change from "{text}". '
+              "Try phrases like 'under $80', 'larger screen', 'no camera', or 'leakproof'.")
+
+    return {"preference_updates": updates, "ai_response": ai}
+
+
 def _validated_supplement(raw: dict) -> dict:
     """Validate Claude's parse_supplement output against the schema.
 
@@ -593,16 +752,28 @@ def refine(body: RefineBody):
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
 
+    # Three-tier parse:
+    # 1. Best case — Claude extracts structured updates.
+    # 2. Validated but empty / Claude unreachable — fall through to a
+    #    deterministic regex parser so common phrases ("under $80",
+    #    "larger screen", "no camera") still update preferences.
+    # 3. Both empty — generic ack, no preference change.
+    result = {"preference_updates": {}, "ai_response": ""}
     try:
         raw = claude_client.parse_supplement(body.text, s["preferences"], s["raw_input"])
         result = _validated_supplement(raw)
     except Exception:
-        # Without LLM access, treat the user's supplement as an acknowledged note
-        # and re-run recommendations against the same preferences.
-        result = {
-            "preference_updates": {},
-            "ai_response": f'Got it — "{body.text}". Updated recommendations below.',
-        }
+        result = {"preference_updates": {}, "ai_response": ""}
+
+    if not result["preference_updates"]:
+        # LLM unavailable or LLM didn't extract anything — try the regex parser.
+        det = _deterministic_parse_supplement(body.text, s["category"])
+        if det["preference_updates"]:
+            result = det
+        elif not result["ai_response"]:
+            result["ai_response"] = det["ai_response"] or (
+                f'Got it — "{body.text}". Updated recommendations below.'
+            )
 
     # Capture preferences BEFORE the merge so we can diff. Without this the
     # /refine route silently overwrites prior elicitation — the proposal's

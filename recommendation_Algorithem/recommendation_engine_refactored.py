@@ -348,17 +348,38 @@ def _score_smart_display(
         if screen is not None:
             score = _apply_rule(score, matches, screen <= 11.0, "kitchen_friendly_size")
 
-    # Screen size priority — explicit user signal beats use_case heuristics.
+    # Screen size priority — gradient scoring so partial-credit matches
+    # are visible. Without this, when a Show 5 user says 'larger screen'
+    # the Show 8 doesn't outrank Show 5 because both lose the same flat
+    # penalty for being < 15". Now Show 5 gets a larger penalty than
+    # Show 8 when 'large' is requested, so the ranking actually changes.
     size_pref = preferences.get("screen_size_priority")
     if size_pref == "compact" and screen is not None:
-        score = _apply_rule(score, matches, screen <= 8.0, "compact_screen",
-                            penalty=_SOFT_PENALTY)
+        if screen <= 8.0:
+            score += _RULE_BONUS; matches.append("compact_screen")
+        elif screen <= 11.0:
+            score -= _SOFT_PENALTY * 0.5      # mild miss
+        else:
+            score -= _SOFT_PENALTY * 1.5      # hard miss
     elif size_pref == "mid" and screen is not None:
-        score = _apply_rule(score, matches, 8.0 <= screen <= 11.0, "mid_screen",
-                            penalty=_SOFT_PENALTY)
+        if 8.0 <= screen <= 11.0:
+            score += _RULE_BONUS; matches.append("mid_screen")
+        elif 5.0 <= screen < 8.0 or 11.0 < screen <= 13.0:
+            score -= _SOFT_PENALTY * 0.5      # near miss
+        else:
+            score -= _SOFT_PENALTY * 1.5      # hard miss
     elif size_pref == "large" and screen is not None:
-        score = _apply_rule(score, matches, screen >= 15.0, "large_screen_pref",
-                            penalty=_SOFT_PENALTY)
+        if screen >= 15.0:
+            score += _RULE_BONUS; matches.append("large_screen_pref")
+        elif screen >= 10.0:
+            score += _RULE_BONUS * 0.5        # partial credit (10-14")
+            matches.append("medium_large_screen")
+        elif screen >= 8.0:
+            pass                                # acceptable, no penalty
+        else:
+            score -= _SOFT_PENALTY * 2          # << 8" is clearly too small
+            # Show 5 (5.5") loses 0.10; Show 8 stays neutral; net +0.10
+            # swing flips the Best Fit when user says "larger screen".
 
     # Privacy: penalise products with cameras when user said no.
     privacy = preferences.get("privacy_camera")
