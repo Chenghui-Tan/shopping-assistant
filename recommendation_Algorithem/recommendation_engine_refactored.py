@@ -137,6 +137,11 @@ def infer_features(product: dict[str, Any]) -> dict[str, bool]:
         "large_capacity":    has("large", "32oz", "40oz", "64oz", "xl"),
         "lightweight":       has("lightweight", "light weight", "16oz", "18oz", "19oz",
                                  "22oz", "24oz", "plastic", "tritan"),
+        # Leakproof inference: explicit copy + Owala FreeSip (well-known leakproof
+        # bottle) + screw-lid descriptors. We surface this as both a feature
+        # flag and a checklist row so users see "Leak-resistant: yes / unknown".
+        "leak_proof":     has("leak-proof", "leakproof", "leak proof", "leak resistant",
+                              "no-spill", "no spill", "spill-proof", "freesip", "screw lid"),
         "is_display_device": (
             has("echo show", "nest hub", "smart display", "google display", "alexa display",
                 "digital picture frame", "digital photo frame", "digital calendar",
@@ -457,6 +462,29 @@ def _score_water_bottle(
     if size_pref == "lightweight":
         score = _apply_rule(score, matches, features["lightweight"], "lightweight_size",
                             penalty=_SOFT_PENALTY)
+
+    # Previously missing — size_preference='large' silently did nothing.
+    # Use real capacity_oz when extractable, fall back to the inferred
+    # large_capacity flag. Threshold 24oz: anything Owala-24oz and up.
+    if size_pref == "large":
+        cap = product.get("capacity_oz")
+        if cap is not None:
+            score = _apply_rule(score, matches, cap >= 24, "large_capacity_pref",
+                                penalty=_SOFT_PENALTY)
+        else:
+            score = _apply_rule(score, matches, features["large_capacity"],
+                                "large_capacity_pref", penalty=_SOFT_PENALTY)
+
+    # Leak-proof preference. Detected from the user's raw frustration
+    # ('leaks/spills') by the route — a strongest-pain signal that should
+    # outrank generic gym fit. Use a 1.5x bonus so leakproof bottles win
+    # ties against bottles that only score on use_case alone.
+    if preferences.get("leak_proof_preferred"):
+        if features["leak_proof"]:
+            score += _RULE_BONUS * 1.5
+            matches.append("leak_proof_match")
+        else:
+            score -= _SOFT_PENALTY
 
     if easy_clean_pref:
         score = _apply_rule(score, matches, features["easy_clean"], "easy_clean",

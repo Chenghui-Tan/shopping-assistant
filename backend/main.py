@@ -232,6 +232,15 @@ def start_session(body: StartBody):
     # by the LLM returning {"insulated": null, "size_preference": null, …}.
     preferences = {k: v for k, v in preferences.items() if v not in (None, "")}
 
+    # Implicit-preference inference from the raw frustration text. The user
+    # rarely sees a "leak-proof" chip but says "leaks in my gym bag" — we
+    # honour that signal explicitly and surface it on the checklist later.
+    raw_lower = (body.text or "").lower()
+    if any(kw in raw_lower for kw in ("leak", "spill")):
+        preferences["leak_proof_preferred"] = True
+    if any(kw in raw_lower for kw in ("heavy", "weighs", "heavy bag", "bulky")):
+        preferences.setdefault("size_preference", "lightweight")
+
     s = session_store.create_session(body.text, category, preferences)
 
     if not category:

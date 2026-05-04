@@ -92,7 +92,11 @@ function deriveTradeoff(product) {
   const rules = new Set(product.rule_matches || [])
 
   // Trade-offs are derived from rule context. Only emit one when we can
-  // ground it; otherwise return null and the UI can hide the card.
+  // ground it; otherwise return null and the UI hides the card.
+  // The previous "lowest-cost option" branch was removed because it lied
+  // — it fired any time price < $15 without checking the actual ranking
+  // among shown products. Cheapest-in-set is now a backend-computed
+  // tradeoff_label on the product itself (see iter ε.3).
   if (rules.has('large_screen')) {
     return 'A larger screen is the strongest fit for your stated use case but takes more counter space than a smaller smart display.'
   }
@@ -104,9 +108,6 @@ function deriveTradeoff(product) {
   }
   if (rules.has('display_device') && product.price && product.price > 100) {
     return "Pricier than a basic speaker, but you're paying for the screen and recipe-following capability that your use case needs."
-  }
-  if (product.price && product.price < 15) {
-    return 'Lowest-cost option in your set; if your needs grow later, upgrading is straightforward.'
   }
   return null
 }
