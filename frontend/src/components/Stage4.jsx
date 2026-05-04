@@ -191,6 +191,24 @@ export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onTog
         {reasons.map((r, i) => <li key={i}>{r}</li>)}
       </ul>
 
+      {product.pref_checks && product.pref_checks.length > 0 && (
+        <div className="why-prefchecks">
+          <div className="why-prefchecks-label">Did this honour what you said?</div>
+          <ul className="pref-checks pref-checks-large">
+            {product.pref_checks.map((c, i) => {
+              const icon = c.status === 'match' ? '✓' : c.status === 'miss' ? '✗' : '?'
+              return (
+                <li key={i} className={`pref-check pref-check-${c.status}`}>
+                  <span className="pref-check-icon">{icon}</span>
+                  <span className="pref-check-label">{c.label}</span>
+                  {c.detail && <span className="pref-check-detail">{c.detail}</span>}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
       {tradeoff && (
         <div className="tradeoff-card">
           <div className="tradeoff-label">⚠️ Trade-off to consider</div>

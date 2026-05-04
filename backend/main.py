@@ -111,6 +111,172 @@ def _next_question(session: dict) -> dict | None:
     return {"key": key, "text": q["text"], "chips": q["chips"]}
 
 
+def _check(label: str, status: str, detail: str = "") -> dict:
+    """Build one row of the preference-match checklist."""
+    return {"label": label, "status": status, "detail": detail}
+
+
+def _preference_checks(p: dict, prefs: dict) -> list[dict]:
+    """Return a per-product list of {label, status} for everything the user
+    said they cared about. status ∈ {match, miss, unknown}.
+
+    The checklist is the user-facing answer to 'did this honour what I
+    said?' Computed at response time so each pick can render the same
+    truth the ranker saw.
+    """
+    cat = p.get("category")
+    feats = p.get("_inferred_features") or {}
+    out: list[dict] = []
+
+    def status_bool(have: bool | None) -> str:
+        if have is True:  return "match"
+        if have is False: return "miss"
+        return "unknown"
+
+    # Use case (always asked)
+    use_case = prefs.get("use_case")
+    if use_case:
+        # Multi-select: match if ANY of the picked use cases lit a rule.
+        wanted = use_case if isinstance(use_case, list) else [use_case]
+        matched_any = any(
+            f"{u}_suitable" in (p.get("_category_rule_matches") or [])
+            or any(rule.startswith(u) for rule in (p.get("_category_rule_matches") or []))
+            for u in wanted
+        )
+        # Heuristic for water_bottle: gym_suitable, daily_use, etc.
+        rules = set(p.get("_category_rule_matches") or [])
+        wb_use_rule = {"gym": "gym_suitable", "daily": "daily_use",
+                       "outdoor": "outdoor_capacity", "kids": "kids_design"}
+        for u in wanted:
+            if cat == "water_bottle" and wb_use_rule.get(u) in rules:
+                matched_any = True
+            if cat == "smart_display" and u == "cooking" and "kitchen_hub_or_recipe" in rules:
+                matched_any = True
+            if cat == "smart_display" and u == "family" and "family_scheduling" in rules:
+                matched_any = True
+            if cat == "smart_display" and u == "entertainment" and "entertainment_features" in rules:
+                matched_any = True
+        out.append(_check("Use case fit", "match" if matched_any else "unknown",
+                          ", ".join(wanted)))
+
+    # Price
+    price_max = prefs.get("price_max")
+    if isinstance(price_max, (int, float)):
+        ok = p.get("price") is not None and p["price"] <= price_max
+        out.append(_check(f"Under ${price_max:g}", "match" if ok else "miss",
+                          f"${p['price']:.2f}" if p.get("price") else ""))
+
+    # ── water_bottle ──────────────────────────────────────────────────────
+    if cat == "water_bottle":
+        if prefs.get("material_preference") and prefs["material_preference"] != "any":
+            target = prefs["material_preference"]
+            actual = p.get("bottle_material")
+            if actual is None:
+                out.append(_check(f"Material: {target}", "unknown"))
+            else:
+                out.append(_check(f"Material: {target}",
+                                  "match" if actual == target else "miss", actual))
+
+        if prefs.get("drinking_style") and prefs["drinking_style"] != "any":
+            target = prefs["drinking_style"]
+            actual = p.get("drinking_style")
+            if actual is None:
+                out.append(_check(f"Drinking: {target}", "unknown"))
+            else:
+                out.append(_check(f"Drinking: {target}",
+                                  "match" if actual == target else "miss", actual))
+
+        if prefs.get("insulated") is True:
+            out.append(_check("Insulated", status_bool(feats.get("insulated"))))
+        elif prefs.get("insulated") is False:
+            # User said insulation doesn't matter — still report if it has it
+            # (information, not a miss).
+            if feats.get("insulated"):
+                out.append(_check("Insulated", "match", "bonus — wasn't required"))
+
+        size_pref = prefs.get("size_preference")
+        if size_pref == "lightweight":
+            out.append(_check("Lightweight", status_bool(feats.get("lightweight"))))
+        elif size_pref == "large":
+            cap = p.get("capacity_oz")
+            if cap is not None:
+                out.append(_check("Large capacity (≥24oz)",
+                                  "match" if cap >= 24 else "miss", f"{cap}oz"))
+            else:
+                out.append(_check("Large capacity",
+                                  "match" if feats.get("large_capacity") else "unknown"))
+
+        if prefs.get("leak_proof_preferred"):
+            out.append(_check("Leak-resistant",
+                              "match" if feats.get("leak_proof") else "unknown"))
+
+    # ── smart_display ─────────────────────────────────────────────────────
+    if cat == "smart_display":
+        eco_pref = prefs.get("voice_ecosystem")
+        if eco_pref and eco_pref not in ("none", "any"):
+            ecos = p.get("ecosystems") or []
+            if not ecos:
+                out.append(_check(f"Works with {eco_pref.title()}", "unknown"))
+            else:
+                out.append(_check(f"Works with {eco_pref.title()}",
+                                  "match" if eco_pref in ecos else "miss",
+                                  ", ".join(ecos)))
+
+        size_pref = prefs.get("screen_size_priority")
+        screen = p.get("screen_inches")
+        if size_pref == "compact":
+            out.append(_check("Compact (<8\")",
+                              "unknown" if screen is None else
+                              ("match" if screen < 8 else "miss"),
+                              f'{screen}"' if screen else ""))
+        elif size_pref == "mid":
+            out.append(_check('Mid screen (8–11")',
+                              "unknown" if screen is None else
+                              ("match" if 8 <= screen <= 11 else "miss"),
+                              f'{screen}"' if screen else ""))
+        elif size_pref == "large":
+            out.append(_check('Large screen (15"+)',
+                              "unknown" if screen is None else
+                              ("match" if screen >= 15 else "miss"),
+                              f'{screen}"' if screen else ""))
+
+        if prefs.get("placement") == "wall":
+            mount = p.get("mounting") or []
+            out.append(_check("Wall-mountable",
+                              "match" if "wall" in mount else "unknown"))
+
+        if prefs.get("privacy_camera") == "no_camera":
+            cam = p.get("has_camera")
+            if cam is False:
+                out.append(_check("No camera", "match"))
+            elif cam is True:
+                out.append(_check("No camera", "miss", "has camera"))
+            else:
+                out.append(_check("No camera", "unknown"))
+
+    # ── kitchen_organizer ─────────────────────────────────────────────────
+    if cat == "kitchen_organizer":
+        if prefs.get("organizer_material") and prefs["organizer_material"] != "any":
+            target = prefs["organizer_material"]
+            actual = p.get("organizer_material")
+            if actual is None:
+                out.append(_check(f"Material: {target}", "unknown"))
+            else:
+                out.append(_check(f"Material: {target}",
+                                  "match" if actual == target else "miss", actual))
+
+        if prefs.get("visibility_priority") == "clear":
+            vis = p.get("organizer_visibility")
+            if vis == "clear":
+                out.append(_check("Clear / see-through", "match"))
+            elif vis == "opaque":
+                out.append(_check("Clear / see-through", "miss", "opaque"))
+            else:
+                out.append(_check("Clear / see-through", "unknown"))
+
+    return out
+
+
 def _format_product(p: dict, explanation: str) -> dict:
     return {
         "title": p["title"],
@@ -158,7 +324,11 @@ def _run_recommendations(session: dict) -> tuple[list[dict], str]:
         # Fall back to the deterministic engine's own explanation so the demo
         # works without an Anthropic API key.
         explanations = [p.get("_explanation", "") for p in products]
-    formatted = [_format_product(p, explanations[i]) for i, p in enumerate(products)]
+    formatted: list[dict] = []
+    for i, p in enumerate(products):
+        f = _format_product(p, explanations[i])
+        f["pref_checks"] = _preference_checks(p, prefs)
+        formatted.append(f)
     session_store.set_recommendations(session["session_id"], formatted)
     return formatted, relaxation
 

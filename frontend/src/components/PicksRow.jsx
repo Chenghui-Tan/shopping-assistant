@@ -33,6 +33,22 @@ function PickFacts({ p }) {
   )
 }
 
+function PrefChecks({ checks }) {
+  if (!checks || checks.length === 0) return null
+  const ICON = { match: '✓', miss: '✗', unknown: '?' }
+  return (
+    <ul className="pref-checks">
+      {checks.map((c, i) => (
+        <li key={i} className={`pref-check pref-check-${c.status}`}>
+          <span className="pref-check-icon">{ICON[c.status]}</span>
+          <span className="pref-check-label">{c.label}</span>
+          {c.detail && <span className="pref-check-detail">{c.detail}</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 const BADGE_CLASS = {
   'Best Fit':              'pick-badge-best',
   'Budget Pick':           'pick-badge-budget',
@@ -99,6 +115,7 @@ export default function PicksRow({ picks, onSelectProduct, isSaved, onToggleSave
           </div>
 
           <PickFacts p={p} />
+          <PrefChecks checks={p.pref_checks} />
 
           <div className="pick-footer">
             <span className="pick-price">${p.price?.toFixed(2)}</span>
