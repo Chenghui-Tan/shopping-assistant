@@ -174,10 +174,19 @@ body {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, transform 0.08s;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.08s;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
-.btn-primary:hover { background: var(--accent-blue-2); }
-.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; background: var(--accent-blue); }
+.btn-primary:hover {
+  background: var(--accent-blue-2);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--accent-blue);
+  box-shadow: none;
+}
 
 .btn-ghost {
   background: transparent;
@@ -230,7 +239,7 @@ body {
 .chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 .chat-bubble {

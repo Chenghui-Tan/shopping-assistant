@@ -9,9 +9,9 @@ import { saveProduct } from './api'
 
 const SCENE_META = {
   1: {
-    headerTitle: 'Kitchen Assistant',
-    headerSubtitle: 'Always here to help',
-    caption: 'Scene 1: User Frustration & Need Discovery — Show empathy and establish human-centered interaction',
+    headerTitle: 'Shopping Assistant',
+    headerSubtitle: 'Here to help you choose with confidence',
+    caption: "Scene 1: Need Discovery — Start from the shopper's real situation, not a product category",
   },
   2: {
     headerTitle: 'Let me understand your needs better',
@@ -154,7 +154,7 @@ export default function App() {
         <header className="scene-header">
           <div className="scene-header-row">
             <span className="scene-header-icon" aria-hidden="true">
-              {stage === 1 && '💬'}
+              {stage === 1 && '✨'}
               {stage === 2 && '✨'}
               {stage === 3 && '🛍️'}
               {stage === 4 && '✅'}

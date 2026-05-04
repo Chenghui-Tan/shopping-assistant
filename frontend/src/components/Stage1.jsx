@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { startSession } from '../api'
 
+// Three sample prompts, one per supported category, framed as the user's
+// real situation rather than a category name. The Stage 1 page itself stays
+// category-agnostic ('Shopping Assistant', not 'Kitchen Assistant') — these
+// samples are the only place a category gets implied, and only when clicked.
 const SAMPLE_PROMPTS = [
-  "I cook almost every day, but I usually search recipes on my phone. The screen is too small, and it's really inconvenient to check while cooking.",
-  "I keep losing track of how much water I drink during workouts. My current bottle is heavy and leaks in my gym bag.",
-  "My kitchen drawers are a mess — I waste time every morning hunting for the right utensil and the cabinets feel chaotic.",
+  "I cook almost every day, but my phone screen is too small to follow recipes while cooking.",
+  "I keep losing track of how much water I drink, and my current bottle leaks in my bag.",
+  "My kitchen drawers are cluttered, and I can never find the tools I need.",
 ]
+const SAMPLE_LABELS = ['Cooking', 'Hydrating', 'Organizing']
 
 // Frontend fallback only — backend now returns a contextual reply via
 // `data.reply` that references the user's inferred use_case. This map is
@@ -74,8 +79,8 @@ export default function Stage1({ onComplete }) {
   return (
     <div className="chat-thread">
       <div className="chat-bubble assistant-bubble">
-        <p>Hi! Tell me what you're trying to figure out — a frustration, a goal, or just a vague need. I'll help you make sense of it.</p>
-        <p className="chat-hint">💡 <em>The more context you give, the better I can help.</em></p>
+        <p>Tell me what you're trying to solve: a frustration, a goal, or something you're unsure how to shop for.</p>
+        <p className="chat-hint">💡 <em>More context helps me recommend better options.</em></p>
       </div>
 
       <textarea
@@ -84,7 +89,7 @@ export default function Stage1({ onComplete }) {
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit()
         }}
-        placeholder="e.g. I cook almost every day but my phone screen is too small to follow recipes…"
+        placeholder="e.g. I cook almost every day, but my phone screen is too small to follow recipes..."
         rows={3}
         autoFocus
       />
@@ -101,14 +106,14 @@ export default function Stage1({ onComplete }) {
 
       <div className="sample-row">
         <span className="sample-label">Or try a sample:</span>
-        {SAMPLE_PROMPTS.map((p, i) => (
+        {SAMPLE_PROMPTS.map((prompt, i) => (
           <button
             key={i}
             className="sample-chip"
-            onClick={() => { setText(p); handleSubmit(p) }}
+            onClick={() => { setText(prompt); handleSubmit(prompt) }}
             disabled={loading}
           >
-            {['Cooking', 'Gym', 'Organizing'][i]}
+            {SAMPLE_LABELS[i]}
           </button>
         ))}
       </div>
