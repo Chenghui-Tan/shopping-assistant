@@ -154,7 +154,7 @@ export default function App() {
         <header className="scene-header">
           <div className="scene-header-row">
             <span className="scene-header-icon" aria-hidden="true">
-              {stage === 1 && '✨'}
+              {stage === 1 && '🛍️'}
               {stage === 2 && '✨'}
               {stage === 3 && '🛍️'}
               {stage === 4 && '✅'}
