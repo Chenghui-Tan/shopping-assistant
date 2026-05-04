@@ -48,6 +48,11 @@ export default function App() {
   const [relaxation, setRelaxation] = useState('strict')
   const [savedUrls, setSavedUrls] = useState(new Set())
   const [compareUrls, setCompareUrls] = useState([])  // ordered list, max 3
+  // Presentation mode reveals evaluator-facing copy: scene captions
+  // (which layer / scene we're on), the trust banner, and the rule-
+  // matching commentary on Stage 4. Default OFF — the user-facing app
+  // should feel like a real assistant, not a narrated prototype.
+  const [presentationMode, setPresentationMode] = useState(false)
   const [showCompare, setShowCompare] = useState(false)
 
   const toggleCompare = useCallback((product) => {
@@ -108,10 +113,22 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <div className="top-bar">Interactive Shopping Assistant Demo</div>
+      <div className="top-bar">
+        <span>Shopping Assistant</span>
+        <label className="presentation-toggle" title="Show scene captions + evaluator notes">
+          <input
+            type="checkbox"
+            checked={presentationMode}
+            onChange={(e) => setPresentationMode(e.target.checked)}
+          />
+          <span>Presentation mode</span>
+        </label>
+      </div>
 
       <div className="step-row">
-        <span className="step-label">Human-Centered Shopping Assistant Demo</span>
+        <span className="step-label">
+          {presentationMode ? 'Human-Centered Shopping Assistant Demo' : ''}
+        </span>
         <span className="step-right">
           {savedUrls.size > 0 && (
             <span className="saved-pill" title="Saved for later">
@@ -185,13 +202,16 @@ export default function App() {
               isSaved={selectedProduct && savedUrls.has(selectedProduct.product_url)}
               onToggleSave={toggleSave}
               rawInput={rawInput}
+              presentationMode={presentationMode}
             />
           )}
           {stage === 5 && <Stage5 sessionId={sessionId} />}
         </div>
       </div>
 
-      <div className="scene-caption">{meta.caption}</div>
+      {presentationMode && (
+        <div className="scene-caption">{meta.caption}</div>
+      )}
 
       {/* Sticky compare bar visible whenever there are 2+ products selected
           to compare. Available across Scenes 3-5 so the user can compare from

@@ -123,7 +123,7 @@ function shortenQuote(s, max = 140) {
   return slice.slice(0, lastSpace > max - 30 ? lastSpace : max).trim() + '…'
 }
 
-export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onToggleSave, rawInput }) {
+export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onToggleSave, rawInput, presentationMode }) {
   if (!product) {
     return (
       <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -197,13 +197,15 @@ export default function Stage4({ product, onBack, onSeeLifecycle, isSaved, onTog
         </div>
       )}
 
-      <div className="trust-banner">
-        <span className="trust-icon">🛡️</span>
-        <span>
-          <strong>Transparency builds trust:</strong> every reason above maps to a rule the
-          ranker actually used — not a generic marketing bullet.
-        </span>
-      </div>
+      {presentationMode && (
+        <div className="trust-banner">
+          <span className="trust-icon">🛡️</span>
+          <span>
+            <strong>Transparency builds trust:</strong> every reason above maps to a rule the
+            ranker actually used — not a generic marketing bullet.
+          </span>
+        </div>
+      )}
 
       <div className="why-cta-row">
         <button className="btn-primary" onClick={onSeeLifecycle}>

@@ -46,17 +46,31 @@ body {
 }
 
 .top-bar {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-soft);
-  padding: 12px 0;
   margin-bottom: 14px;
   background: var(--card-bg);
   margin-left: -16px;
   margin-right: -16px;
 }
+
+.presentation-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  cursor: pointer;
+  user-select: none;
+}
+.presentation-toggle input { cursor: pointer; }
 
 /* ----- Step indicator ----- */
 .step-row {
