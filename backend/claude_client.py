@@ -22,7 +22,7 @@ _EXPLAIN_SYSTEM = """\
 You are a personal shopping assistant. Write a short (1-2 sentences) personal explanation
 for why each product fits this specific customer. Use their actual words and context.
 Be specific, not generic.
-Return ONLY a JSON array of 5 strings, one per product.
+Return ONLY a JSON array of strings, exactly one string per product in the list.
 Example: ["Perfect for gym sessions — insulated to keep drinks cold for hours.", ...]\
 """
 

@@ -2,11 +2,16 @@
 import sys
 from pathlib import Path
 
+# Allow startup from either repo root (`uvicorn backend.main:app`) or the
+# backend directory (`uvicorn main:app`).
+_BACKEND_DIR = Path(__file__).parent
+sys.path.insert(0, str(_BACKEND_DIR))
+
 # Add recommendation engine to path and fix its data path
-_ENGINE_DIR = Path(__file__).parent.parent / "recommendation_Algorithem"
+_ENGINE_DIR = _BACKEND_DIR.parent / "recommendation_Algorithem"
 sys.path.insert(0, str(_ENGINE_DIR))
 import recommendation_engine_refactored as engine
-engine.DATA_PATH = Path(__file__).parent.parent / "data" / "clean" / "products_clean.json"
+engine.DATA_PATH = _BACKEND_DIR.parent / "data" / "clean" / "products_clean.json"
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -539,6 +544,26 @@ def _format_product(p: dict, explanation: str) -> dict:
     }
 
 
+def _normalize_explanations(products: list[dict], explanations) -> list[str]:
+    """Return exactly one explanation per product.
+
+    The LLM may return too few, too many, or a non-list payload. The route
+    should never crash because explanation copy is malformed; missing entries
+    fall back to the deterministic ranker explanation already on each product.
+    """
+    if not isinstance(explanations, list):
+        explanations = []
+
+    normalized: list[str] = []
+    for i, p in enumerate(products):
+        candidate = explanations[i] if i < len(explanations) else None
+        if isinstance(candidate, str) and candidate.strip():
+            normalized.append(candidate)
+        else:
+            normalized.append(p.get("_explanation", "Matches your stated preferences."))
+    return normalized
+
+
 def _run_recommendations(session: dict) -> tuple[list[dict], str]:
     # Merge session.category into the preferences dict the engine expects.
     # The engine resolves category from preferences["category"], but the
@@ -552,7 +577,8 @@ def _run_recommendations(session: dict) -> tuple[list[dict], str]:
     except Exception:
         # Fall back to the deterministic engine's own explanation so the demo
         # works without an Anthropic API key.
-        explanations = [p.get("_explanation", "") for p in products]
+        explanations = []
+    explanations = _normalize_explanations(products, explanations)
     formatted: list[dict] = []
     for i, p in enumerate(products):
         f = _format_product(p, explanations[i])
