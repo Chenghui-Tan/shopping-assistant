@@ -47,7 +47,7 @@ export default function Stage1({ onComplete }) {
       // if the backend didn't supply one (older deploys).
       const cat = data.category || 'default'
       setReply(data.reply || FALLBACK_REPLIES[cat] || FALLBACK_REPLIES.default)
-    } catch (e) {
+    } catch {
       setError('Could not start the conversation. Please try again.')
     } finally {
       setLoading(false)

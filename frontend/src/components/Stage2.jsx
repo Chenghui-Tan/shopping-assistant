@@ -195,11 +195,13 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
   const [error, setError] = useState(null)
   const submitted = useRef(false)
 
-  // If the LLM already pre-filled the category, respect it.
+  // If the LLM already pre-filled the category, respect it. The `!category`
+  // guard makes the effect idempotent across re-runs, so including `category`
+  // in deps doesn't cause loops.
   useEffect(() => {
     if (startData?.category && !category) setCategory(startData.category)
     if (startData?.category) setPickingCategory(false)
-  }, [startData])
+  }, [startData, category])
 
   const pickCategory = async (cat) => {
     setLoading(true)
@@ -209,7 +211,7 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
       await answerQuestion(sessionId, 'category', labelMap[cat], true)
       setCategory(cat)
       setPickingCategory(false)
-    } catch (e) {
+    } catch {
       setError('Could not select category.')
     } finally {
       setLoading(false)
@@ -263,7 +265,7 @@ export default function Stage2({ sessionId, startData, openingTurn, onComplete }
       }
       const data = await getRecommendations(sessionId)
       onComplete(data.products, data.relaxation, data.picks, data.raw_input)
-    } catch (e) {
+    } catch {
       submitted.current = false
       setError('Could not load recommendations. Please try again.')
       setLoading(false)

@@ -90,7 +90,7 @@ export default function SupplementBar({ sessionId, supplementLog, onSupplement, 
       onSupplement(data.products, data.ai_response, data.relaxation, data.diff, data.picks)
       setText('')
       document.getElementById('results-top')?.scrollIntoView({ behavior: 'smooth' })
-    } catch (e) {
+    } catch {
       setError('Could not refine. Please try again.')
     } finally {
       setLoading(false)

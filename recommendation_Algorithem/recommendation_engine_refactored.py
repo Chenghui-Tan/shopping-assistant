@@ -26,7 +26,10 @@ from typing import Any
 
 from explainability import generate_explanation
 
-DATA_PATH = Path(__file__).parent / "data" / "clean" / "products_clean.json"
+# Default data location — points at the repo's shared catalogue. The backend
+# overrides this (backend/main.py) but the engine should also work standalone
+# (`python recommendation_engine_refactored.py`) for diagnostic runs.
+DATA_PATH = Path(__file__).parent.parent / "data" / "clean" / "products_clean.json"
 
 # Category aliases so callers can use natural language or snake_case
 CATEGORY_ALIASES: dict[str, str] = {

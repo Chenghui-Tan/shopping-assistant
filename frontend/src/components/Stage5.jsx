@@ -28,11 +28,14 @@ export default function Stage5({ sessionId }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
+  // Render falls back to FALLBACK when `data` is null (see `const d = data
+  // || FALLBACK` below), so the effect only fetches when there's a session
+  // — no synchronous setState inside the effect body.
   useEffect(() => {
-    if (!sessionId) { setData(FALLBACK); return }
+    if (!sessionId) return
     getLifecycle(sessionId)
       .then(setData)
-      .catch(() => { setData(FALLBACK); setError('Using sample lifecycle data') })
+      .catch(() => setError('Using sample lifecycle data'))
   }, [sessionId])
 
   const d = data || FALLBACK

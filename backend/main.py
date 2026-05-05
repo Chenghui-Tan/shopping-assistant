@@ -7,6 +7,16 @@ from pathlib import Path
 _BACKEND_DIR = Path(__file__).parent
 sys.path.insert(0, str(_BACKEND_DIR))
 
+# Auto-load .env files so a fresh runner doesn't need to remember
+# `export ANTHROPIC_API_KEY`. We try backend/.env first (closest to the
+# process), then the repo-root .env. Missing files are silently ignored.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(_BACKEND_DIR / ".env")
+    load_dotenv(_BACKEND_DIR.parent / ".env")
+except ImportError:
+    pass  # python-dotenv is in requirements but stay tolerant if missing
+
 # Add recommendation engine to path and fix its data path
 _ENGINE_DIR = _BACKEND_DIR.parent / "recommendation_Algorithem"
 sys.path.insert(0, str(_ENGINE_DIR))
@@ -28,7 +38,13 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    # Local dev origins. Vite picks 5173 by default but falls back to 5174
+    # when 5173 is occupied; both localhost and 127.0.0.1 are valid origins
+    # the browser may send. Listing all four prevents CORS preflight 400s.
+    allow_origins=[
+        "http://localhost:5173", "http://127.0.0.1:5173",
+        "http://localhost:5174", "http://127.0.0.1:5174",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
