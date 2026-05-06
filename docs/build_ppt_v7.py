@@ -501,7 +501,7 @@ add_text(s, "Orchestrates all logic + deterministic\nfallbacks (regex refine, cl
 
 # Claude (language only — never ranking)
 add_rect(s, Inches(9.65), R1Y, Inches(3.35), R1H, PURPLE)
-add_text(s, "Claude Opus 4.6  (AI)",
+add_text(s, "Claude Opus 4.7  (AI)",
          Inches(9.75), R1Y+Inches(0.09), Inches(3.15), Inches(0.42),
          bold=True, size=12, color=WHITE, align=PP_ALIGN.CENTER)
 add_text(s, "Parse free-text input\nWrite personal copy\nParse refine intent\n(deterministic fallback per call)",
@@ -615,7 +615,7 @@ add_notes(s,
     "Need Discovery, Clarification, 3 Curated Picks, Why-this-fits, Lifecycle.\n"
     "- FastAPI orchestrates Claude (language) and the Recommendation Engine "
     "(deterministic). Eight endpoints including /save and /lifecycle.\n"
-    "- Claude Opus 4.6 is used at three call sites: parse free-text input, "
+    "- Claude Opus 4.7 is used at three call sites: parse free-text input, "
     "write personal product copy, parse refine intent. Each has a deterministic "
     "fallback so the demo runs without an API key — regex classifier for input, "
     "rule->text dictionary for copy, regex parser for refine.\n"
@@ -783,7 +783,7 @@ stack_cards = [
      "drinking_style · organiser_material\n"
      "Pulled from titles at load time",
      "feeds ranker, picks, compare view"),
-    ("Claude Opus 4.6  —  3 Call Sites",  PURPLE,
+    ("Claude Opus 4.7  —  3 Call Sites",  PURPLE,
      "①  Parse free-text input\n"
      "②  Write personal product copy\n"
      "③  Parse refine intent\n"
@@ -832,7 +832,7 @@ add_notes(s,
     "copy, parse refine intent. All three have deterministic fallbacks so the "
     "demo runs without an API key. Ranking is never an LLM call.\n\n"
     "AI tooling across the build (disclosed honestly):\n"
-    "- Runtime model:  Claude Opus 4.6 (anthropic SDK).\n"
+    "- Runtime model:  Claude Opus 4.7 (anthropic SDK).\n"
     "- Pair-programming:  Claude Code agent on Opus 4.6 and 4.7 across the "
     "12-week build.\n"
     "- Independent validation:  Codex GPT-5.5 was run as an independent "
@@ -844,7 +844,7 @@ add_notes(s,
 # the Claude card isn't read as the only AI tool used in the project.
 add_rect(s, Inches(0.45), Inches(7.05), Inches(12.4), Inches(0.36), NAVY)
 add_text(s,
-         "AI tooling:  Runtime  Claude Opus 4.6   ·   Build  Claude Code (Opus 4.6 / 4.7)"
+         "AI tooling:  Runtime  Claude Opus 4.7   ·   Build  Claude Code (Opus 4.6 / 4.7)"
          "   ·   Independent validation  Codex GPT-5.5",
          Inches(0.6), Inches(7.07), Inches(12.1), Inches(0.32),
          bold=True, size=10, color=ICE, align=PP_ALIGN.CENTER)
@@ -1037,7 +1037,7 @@ info_items = [
     ("Author",       "Chenghui Tan"),
     ("Institution",  "California State University, East Bay (CSUEB)"),
     ("Project",      "Decision-Oriented Conversational Shopping Assistant"),
-    ("Runtime",      "React · FastAPI · Claude Opus 4.6 · Python · Playwright (ETL)"),
+    ("Runtime",      "React · FastAPI · Claude Opus 4.7 · Python · Playwright (ETL)"),
     ("Built with",   "Claude Code (Opus 4.6 / 4.7)  ·  Codex GPT-5.5  (independent validation)"),
 ]
 for i, (label, value) in enumerate(info_items):

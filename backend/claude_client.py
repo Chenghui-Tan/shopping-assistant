@@ -3,7 +3,7 @@ import json
 import os
 import anthropic
 
-MODEL = "claude-opus-4-6"
+MODEL = "claude-opus-4-7"
 client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", "placeholder"))
 
 _PARSE_SYSTEM = """\
