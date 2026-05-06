@@ -868,12 +868,12 @@ add_text(s, "Capability Validation",
          bold=True, size=13, color=ICE)
 
 findings = [
+    ("Validation method  (multi-agent)",
+     "Claude Code ↔ Codex GPT-5.5 cross-review\non the same codebase  +  family / friends /\nclassmates user testing"),
     ("Capability gaps (self-evaluation)",
      "7 of 7 gaps addressed in our walkthroughs;\nno surveyed platform addressed more than 2"),
     ("Decision-critical attributes inline",
      "Screen size, ecosystem, camera, capacity,\nmaterial — surfaced on every pick"),
-    ("End-to-end in five scenes",
-     "Need → clarify → 3 picks → why-this-fits →\nlifecycle. Zero external page navigation."),
     ("Trade-offs visible, not hidden",
      "Every pick shows a ✓/✗/? checklist mapping\nyour chips to match status — no surprises"),
 ]
@@ -921,6 +921,16 @@ add_text(s,
          size=10, color=ICE, italic=True, align=PP_ALIGN.CENTER)
 
 add_notes(s,
+    "Validation method (multi-agent debate):\n"
+    "I ran two AI agents independently against the same codebase and "
+    "compared their findings. Claude Code (the build pair-programmer) "
+    "did the implementation and self-review; Codex GPT-5.5 was given "
+    "the role of independent technical validator and listed every "
+    "demo-safety risk it could find. Each finding either survived "
+    "cross-examination (and got fixed in code) or got dismissed with "
+    "a written reason. Combined with small-scale user testing on "
+    "family / friends / classmates, this gave three independent "
+    "evaluation lenses on the project.\n\n"
     "Live demo script (matches the running app exactly):\n\n"
     "1. Type into Scene 1: 'current bottle is heavy and leaks in my gym bag'.\n"
     "   Observe: category auto-classified as water_bottle. The route also "
