@@ -833,8 +833,7 @@ add_notes(s,
     "demo runs without an API key. Ranking is never an LLM call.\n\n"
     "AI tooling across the build (disclosed honestly):\n"
     "- Runtime model:  Claude Opus 4.7 (anthropic SDK).\n"
-    "- Pair-programming:  Claude Code agent on Opus 4.6 and 4.7 across the "
-    "12-week build.\n"
+    "- Pair-programming:  Claude Code agent on Opus 4.7 across the build.\n"
     "- Independent validation:  Codex GPT-5.5 was run as an independent "
     "technical reviewer to flag demo-safety issues.\n"
     "All three are named in the report's AI Contributions section.")
@@ -844,7 +843,7 @@ add_notes(s,
 # the Claude card isn't read as the only AI tool used in the project.
 add_rect(s, Inches(0.45), Inches(7.05), Inches(12.4), Inches(0.36), NAVY)
 add_text(s,
-         "AI tooling:  Runtime  Claude Opus 4.7   ·   Build  Claude Code (Opus 4.6 / 4.7)"
+         "AI tooling:  Runtime  Claude Opus 4.7   ·   Build  Claude Code (Opus 4.7)"
          "   ·   Independent validation  Codex GPT-5.5",
          Inches(0.6), Inches(7.07), Inches(12.1), Inches(0.32),
          bold=True, size=10, color=ICE, align=PP_ALIGN.CENTER)
@@ -987,7 +986,7 @@ cons = [
     "✓  Explanations grounded in the\n    same rules the ranker used",
     "✓  Visible preference continuity —\n    every refine shows a diff",
     "✓  Lifecycle layer is a prototype\n    value-extension concept",
-    "✓  Multi-model workflow disclosed:\n    Opus 4.6 + 4.7 build · Codex 5.5 review",
+    "✓  AI tools disclosed:\n    Claude Opus 4.7 · Codex 5.5 review",
 ]
 fut = [
     "→  Formal user study\n    (SUS, task completion time)",
@@ -1038,7 +1037,7 @@ info_items = [
     ("Institution",  "California State University, East Bay (CSUEB)"),
     ("Project",      "Decision-Oriented Conversational Shopping Assistant"),
     ("Runtime",      "React · FastAPI · Claude Opus 4.7 · Python · Playwright (ETL)"),
-    ("Built with",   "Claude Code (Opus 4.6 / 4.7)  ·  Codex GPT-5.5  (independent validation)"),
+    ("Built with",   "Claude Code (Opus 4.7)  ·  Codex GPT-5.5  (independent validation)"),
 ]
 for i, (label, value) in enumerate(info_items):
     y = Inches(3.75) + i * Inches(0.6)
