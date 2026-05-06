@@ -828,13 +828,26 @@ add_notes(s,
     "Attribute extraction: regex-based, runs at load time. Echo Show models map "
     "to known screen sizes (5 -> 5.5\", 8 -> 8\", 15 -> 15.6\"); ecosystems "
     "infer from Echo/Nest/HomePod keywords; bottle capacity from 'oz' patterns.\n\n"
-    "Claude call sites: parse free-text input, write personal copy, parse "
-    "refine intent. All three have deterministic fallbacks (regex classifier, "
-    "rule->text dictionary, regex parser) so the demo runs without an API key. "
-    "Ranking is never an LLM call.\n\n"
-    "Frontend: five scenes implemented in React + Vite. Compare overlay lets "
-    "the user pick 2-3 finalists; save-for-later persists per session; diff "
-    "history records every refine turn.")
+    "Claude call sites in the runtime: parse free-text input, write personal "
+    "copy, parse refine intent. All three have deterministic fallbacks so the "
+    "demo runs without an API key. Ranking is never an LLM call.\n\n"
+    "AI tooling across the build (disclosed honestly):\n"
+    "- Runtime model:  Claude Opus 4.6 (anthropic SDK).\n"
+    "- Pair-programming:  Claude Code agent on Opus 4.6 and 4.7 across the "
+    "12-week build.\n"
+    "- Independent validation:  Codex GPT-5.5 was run as an independent "
+    "technical reviewer to flag demo-safety issues.\n"
+    "All three are named in the report's AI Contributions section.")
+
+# Bottom disclosure strip — same visual style as the bridge bar on slide 4.
+# Acknowledges the multi-model workflow explicitly so the runtime model on
+# the Claude card isn't read as the only AI tool used in the project.
+add_rect(s, Inches(0.45), Inches(7.05), Inches(12.4), Inches(0.36), NAVY)
+add_text(s,
+         "AI tooling:  Runtime  Claude Opus 4.6   ·   Build  Claude Code (Opus 4.6 / 4.7)"
+         "   ·   Independent validation  Codex GPT-5.5",
+         Inches(0.6), Inches(7.07), Inches(12.1), Inches(0.32),
+         bold=True, size=10, color=ICE, align=PP_ALIGN.CENTER)
 
 slide_num(s, 9, dark=False)
 
@@ -974,7 +987,7 @@ cons = [
     "✓  Explanations grounded in the\n    same rules the ranker used",
     "✓  Visible preference continuity —\n    every refine shows a diff",
     "✓  Lifecycle layer is a prototype\n    value-extension concept",
-    "✓  Same pattern works across\n    all 3 demo categories",
+    "✓  Multi-model workflow disclosed:\n    Opus 4.6 + 4.7 build · Codex 5.5 review",
 ]
 fut = [
     "→  Formal user study\n    (SUS, task completion time)",
@@ -1021,13 +1034,14 @@ r = s.shapes.add_shape(1, Inches(1.0), Inches(3.6), Inches(11.3), Pt(1.5))
 r.fill.solid(); r.fill.fore_color.rgb = ICE; r.line.fill.background()
 
 info_items = [
-    ("Author",      "Chenghui Tan"),
-    ("Institution", "California State University, East Bay (CSUEB)"),
-    ("Project",     "Decision-Oriented Conversational Shopping Assistant"),
-    ("Stack",       "React · FastAPI · Claude Opus 4.6 · Python · Playwright (ETL)"),
+    ("Author",       "Chenghui Tan"),
+    ("Institution",  "California State University, East Bay (CSUEB)"),
+    ("Project",      "Decision-Oriented Conversational Shopping Assistant"),
+    ("Runtime",      "React · FastAPI · Claude Opus 4.6 · Python · Playwright (ETL)"),
+    ("Built with",   "Claude Code (Opus 4.6 / 4.7)  ·  Codex GPT-5.5  (independent validation)"),
 ]
 for i, (label, value) in enumerate(info_items):
-    y = Inches(3.85) + i * Inches(0.72)
+    y = Inches(3.75) + i * Inches(0.6)
     add_text(s, label + ":", Inches(2.2), y, Inches(2.2), Inches(0.6),
              bold=True, size=13, color=ICE)
     add_text(s, value, Inches(4.6), y, Inches(8.0), Inches(0.6),
