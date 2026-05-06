@@ -915,8 +915,8 @@ for i, (step, desc) in enumerate(demo_steps):
 add_rect(s, Inches(0.5), Inches(6.78), Inches(11.45), Inches(0.42),
          RGBColor(0x2A, 0x35, 0x75))
 add_text(s,
-         "Heuristic self-assessment against the seven capability gaps in our evaluation  ·  "
-         "formal user study is future work (see Slide 11)",
+         "Self-evaluation + small-scale user testing (family · friends · classmates)  ·  "
+         "formal study is future work (see Slide 11)",
          Inches(0.5), Inches(6.82), Inches(11.45), Inches(0.36),
          size=10, color=ICE, italic=True, align=PP_ALIGN.CENTER)
 
@@ -976,7 +976,7 @@ for x, title, fill in zip(col3_x, col_titles, col_colors):
 
 lims = [
     "⚠  Small dataset — 100 products,\n    3 categories only",
-    "⚠  No formal user study —\n    heuristic evaluation only",
+    "⚠  Small-scale user testing —\n    family, friends, classmates only",
     "⚠  72/100 delivery values are\n    estimated (flagged in data)",
     "⚠  Rule-based ranking — weights\n    inferred, not learned",
 ]
