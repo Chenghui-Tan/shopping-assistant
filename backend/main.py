@@ -691,9 +691,13 @@ _CATEGORY_KEYWORD_PATTERNS: dict[str, list[str]] = {
         r"\bhands[-\s]?free\s+(?:cooking|recipe)\b",
     ],
     "kitchen_organizer": [
-        r"\bkitchen\s+organi[sz]er\b", r"\borgani[sz]er\b", r"\bdrawer\s+organi",
-        r"\bcabinet\b", r"\bcountertop\b", r"\bpantry\b", r"\bspice\s+rack\b",
-        r"\blazy\s+susan\b", r"\bbrightroom\b",
+        r"\bkitchen\s+organi[sz]er\b", r"\borgani[sz]er\b",
+        # 'My drawers are cluttered' / 'kitchen drawer mess' — common
+        # complaints that don't say 'organizer' but clearly map here.
+        r"\bdrawers?\b", r"\bcabinet\b", r"\bcountertop\b", r"\bpantry\b",
+        r"\bspice\s+rack\b", r"\blazy\s+susan\b", r"\bbrightroom\b",
+        r"\bclutter", r"\bcan(?:'?t| not| never)\s+find\b",
+        r"\bmess(?:y|ily|ed)?\b\s*(?:kitchen|drawer|cabinet|pantry)?",
     ],
 }
 
