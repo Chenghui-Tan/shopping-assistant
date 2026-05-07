@@ -868,21 +868,25 @@ add_text(s, "Capability Validation",
          bold=True, size=13, color=ICE)
 
 findings = [
-    ("Validation method  (multi-agent)",
-     "Claude Code ↔ Codex GPT-5.5 cross-review\non the same codebase  +  family / friends /\nclassmates user testing"),
-    ("Capability gaps (self-evaluation)",
-     "7 of 7 gaps addressed in our walkthroughs;\nno surveyed platform addressed more than 2"),
-    ("Decision-critical attributes inline",
-     "Screen size, ecosystem, camera, capacity,\nmaterial — surfaced on every pick"),
-    ("Trade-offs visible, not hidden",
-     "Every pick shows a ✓/✗/? checklist mapping\nyour chips to match status — no surprises"),
+    ("Multi-agent debate  ·  Claude Code Opus 4.7  ↔  Codex GPT-5.5",
+     "Claude Code: brainstorm · implementation · tests · iterations.\n"
+     "Codex GPT-5.5: independent evaluation + validation review.\n"
+     "Each finding either got fixed in code or dismissed in writing."),
+    ("Small-scale user testing  ·  family · friends · classmates",
+     "Confirmed that structured recommendations, preference\n"
+     "continuity, and side-by-side compare made the decision\n"
+     "process easier to follow."),
+    ("Industry mentor input",
+     "Senior Analytics Manager · Sr. BI Engineer · Data Scientist · Data\n"
+     "Engineer (Amazon, 13 years) — input on data discipline and\n"
+     "decision-support framing."),
 ]
 for i, (title, body) in enumerate(findings):
-    y = Inches(2.5) + i * Inches(1.0)
+    y = Inches(2.35) + i * Inches(1.45)
     add_text(s, f"✓  {title}", Inches(0.65), y,
              Inches(5.9), Inches(0.38), bold=True, size=11, color=GREEN_OK)
-    add_text(s, body, Inches(0.65), y + Inches(0.36),
-             Inches(5.9), Inches(0.55), size=10, color=WHITE)
+    add_text(s, body, Inches(0.65), y + Inches(0.34),
+             Inches(5.9), Inches(1.05), size=10, color=WHITE)
 
 # Right — demo walkthrough (water-bottle scenario showcases the new
 # preference checklist, curated picks, refine, and comparison features)
@@ -921,16 +925,23 @@ add_text(s,
          size=10, color=ICE, italic=True, align=PP_ALIGN.CENTER)
 
 add_notes(s,
-    "Validation method (multi-agent debate):\n"
-    "I ran two AI agents independently against the same codebase and "
-    "compared their findings. Claude Code (the build pair-programmer) "
-    "did the implementation and self-review; Codex GPT-5.5 was given "
-    "the role of independent technical validator and listed every "
-    "demo-safety risk it could find. Each finding either survived "
-    "cross-examination (and got fixed in code) or got dismissed with "
-    "a written reason. Combined with small-scale user testing on "
-    "family / friends / classmates, this gave three independent "
-    "evaluation lenses on the project.\n\n"
+    "Validation — three independent lenses:\n\n"
+    "1. Multi-agent debate. Claude Code (Opus 4.7) ran brainstorming, "
+    "implementation, tests, and iterations across the 12-week build. "
+    "Codex GPT-5.5 was given the role of independent technical validator "
+    "and listed every demo-safety risk it could find. Findings either "
+    "got fixed in code or got dismissed with a written reason.\n\n"
+    "2. Small-scale user testing. Family, friends, and classmates ran "
+    "the demo end-to-end. Their feedback consistently confirmed that "
+    "three things made the decision process easier to follow: structured "
+    "recommendations (3 picks instead of a long grid), visible preference "
+    "continuity (the diff card on each refine), and the side-by-side "
+    "comparison view.\n\n"
+    "3. Industry mentor input. A Senior Analytics Manager / Senior "
+    "Business Intelligence Engineer / Data Scientist / Data Engineer "
+    "with 13 years at Amazon gave feedback on data discipline (provenance "
+    "flagging, scraped vs estimated values) and on the decision-support "
+    "framing (treating shopping as a multi-criteria decision problem).\n\n"
     "Live demo script (matches the running app exactly):\n\n"
     "1. Type into Scene 1: 'current bottle is heavy and leaks in my gym bag'.\n"
     "   Observe: category auto-classified as water_bottle. The route also "
