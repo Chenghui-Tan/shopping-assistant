@@ -75,7 +75,7 @@ def divider(slide, y, color=ICE, w=12.3):
     r.fill.solid(); r.fill.fore_color.rgb = color
     r.line.fill.background()
 
-def slide_num(slide, n, total=12, dark=True):
+def slide_num(slide, n, total=11, dark=True):
     c = MUTED if dark else RGBColor(0x9A, 0xA8, 0xCC)
     add_text(slide, f"{n} / {total}",
              Inches(12.1), H - Inches(0.45), Inches(1.1), Inches(0.35),
@@ -272,75 +272,16 @@ for i, (left, right) in enumerate(stat_items):
 slide_num(s, 3)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 4 — Competitive Analysis  (LIGHT)
-# Fix: moved before Our Product; renamed from "Related Work" to "Competitive Analysis"
-# ══════════════════════════════════════════════════════════════════════════════
-s = prs.slides.add_slide(BL)
-bg(s, LIGHT_BG); top_bar(s, NAVY); bot_bar(s, NAVY)
-
-section_label(s, "03  ·  Competitive Analysis", NAVY)
-slide_title(s, "Capability Comparison Across Platforms", NAVY, 32)
-divider(s, 1.62, NAVY)
-
-col_labels = ["Capability", "Google\nShopping", "Amazon\nRufus",
-              "ChatGPT\nShopping", "Perplexity", "Our\nSystem"]
-col_w = [Inches(3.2), Inches(1.6), Inches(1.6), Inches(1.6), Inches(1.6), Inches(1.8)]
-x_starts = [Inches(0.45)]
-for cw in col_w[:-1]:
-    x_starts.append(x_starts[-1] + cw)
-
-row_h = Inches(0.58); header_y = Inches(1.74)
-
-for i, (label, x, cw) in enumerate(zip(col_labels, x_starts, col_w)):
-    fill = NAVY if i == 0 else MID_BLUE
-    add_rect(s, x, header_y, cw - Inches(0.03), row_h, fill)
-    add_text(s, label, x + Inches(0.05), header_y + Inches(0.08),
-             cw - Inches(0.1), row_h,
-             bold=True, size=10, color=ICE if i > 0 else WHITE,
-             align=PP_ALIGN.CENTER)
-
-rows_data = [
-    ("Preference Elicitation",        "✗",      "Partial", "Partial", "✗", "✓"),
-    ("Decision Modeling",             "✗",      "✗",       "✗",       "✗", "✓"),
-    ("Explainable Recommendations",   "✗",      "✗",       "Partial", "✓", "✓"),
-    ("Delivery / Promo Info",         "Partial","✗",       "✗",       "✗", "✓"),
-    ("Preference Continuity",         "✗",      "Partial", "Partial", "✗", "✓"),
-    ("Side-by-Side Comparison",       "✗",      "✗",       "✗",       "✗", "✓"),
-    ("Lifecycle Support",             "✗",      "✗",       "✗",       "✗", "✓"),
-]
-
-for r, (row_label, *vals) in enumerate(rows_data):
-    y = header_y + row_h * (r + 1) + Inches(0.04)
-    row_fill = LIGHT_BG if r % 2 == 0 else RGBColor(0xE2, 0xE8, 0xF8)
-    add_rect(s, x_starts[0], y, col_w[0] - Inches(0.03),
-             row_h - Inches(0.04), RGBColor(0xD6, 0xDE, 0xF7))
-    add_text(s, row_label, x_starts[0] + Inches(0.1), y + Inches(0.15),
-             col_w[0] - Inches(0.15), row_h, size=11, color=DARK_TEXT)
-    for j, (val, x, cw) in enumerate(zip(vals, x_starts[1:], col_w[1:]), 1):
-        add_rect(s, x, y, cw - Inches(0.03), row_h - Inches(0.04), row_fill)
-        c = GREEN_OK if val == "✓" else RED_NO if val == "✗" else MUTED
-        add_text(s, val, x, y + Inches(0.1), cw - Inches(0.03), row_h,
-                 bold=(val in ("✓", "✗")), size=14, color=c,
-                 align=PP_ALIGN.CENTER)
-
-# Bridge — now logically positioned: comparison complete → here's our solution
-add_rect(s, Inches(0.45), Inches(6.65), Inches(12.4), Inches(0.43), NAVY)
-add_text(s,
-         "→  In our self-evaluation against these platforms, our system addresses all seven gaps.  "
-         "Here is how we built it.",
-         Inches(0.65), Inches(6.69), Inches(12.0), Inches(0.36),
-         bold=True, size=12, color=ICE)
-
-slide_num(s, 4, dark=False)
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 5 — Our Product  (DARK)
+# SLIDE 4 — Our Product  (DARK)
+# (Previous slide 4 — 'Competitive Analysis' capability comparison table —
+# was removed per user request; the seven gaps remain established on
+# slide 3 'The Market & The Gaps'.)
 # Fix: moved after comparison; fixed abstract chip labels
 # ══════════════════════════════════════════════════════════════════════════════
 s = prs.slides.add_slide(BL)
 bg(s, NAVY); top_bar(s, ICE); bot_bar(s, ICE)
 
-section_label(s, "04  ·  Our Product")
+section_label(s, "03  ·  Our Product")
 slide_title(s, "Your Personal AI Shopping Assistant")
 divider(s, 1.62)
 
@@ -420,7 +361,7 @@ slide_num(s, 5)
 s = prs.slides.add_slide(BL)
 bg(s, LIGHT_BG); top_bar(s, NAVY); bot_bar(s, NAVY)
 
-section_label(s, "05A  ·  Conceptual Architecture", NAVY)
+section_label(s, "04A  ·  Conceptual Architecture", NAVY)
 slide_title(s, "Five-Layer Decision Support Framework", NAVY, 32)
 divider(s, 1.62, NAVY)
 
@@ -462,7 +403,7 @@ add_text(s,
          Inches(0.5), Inches(5.75), Inches(12.3), Inches(0.5),
          size=11, color=MUTED, align=PP_ALIGN.CENTER, italic=True)
 
-slide_num(s, 6, dark=False)
+slide_num(s, 5, dark=False)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SLIDE 7 — Architecture: Tech & Interactions  (DARK)
@@ -471,7 +412,7 @@ slide_num(s, 6, dark=False)
 s = prs.slides.add_slide(BL)
 bg(s, NAVY); top_bar(s, ICE); bot_bar(s, ICE)
 
-section_label(s, "05B  ·  Runtime Architecture — Tech & Interactions")
+section_label(s, "04B  ·  Runtime Architecture — Tech & Interactions")
 slide_title(s, "Components & How They Communicate")
 divider(s, 1.62)
 
@@ -625,7 +566,7 @@ add_notes(s,
     "- Product DB is products_clean.json with 100 products across the three "
     "categories. ETL via Playwright is offline batch.")
 
-slide_num(s, 7)
+slide_num(s, 6)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SLIDE 8 — Recommendation Algorithm  (LIGHT)
@@ -634,7 +575,7 @@ slide_num(s, 7)
 s = prs.slides.add_slide(BL)
 bg(s, LIGHT_BG); top_bar(s, NAVY); bot_bar(s, NAVY)
 
-section_label(s, "06  ·  Recommendation Algorithm", NAVY)
+section_label(s, "05  ·  Recommendation Algorithm", NAVY)
 slide_title(s, "The Deterministic Core", NAVY, 30)
 divider(s, 1.48, NAVY)
 
@@ -757,7 +698,7 @@ add_notes(s,
     "Trust-boundary anchor: when the system must decide what to show, AI steps "
     "aside. Ranking is rule-based, reproducible, and auditable.")
 
-slide_num(s, 8, dark=False)
+slide_num(s, 7, dark=False)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SLIDE 9 — Supporting Stack  (LIGHT)
@@ -766,7 +707,7 @@ slide_num(s, 8, dark=False)
 s = prs.slides.add_slide(BL)
 bg(s, LIGHT_BG); top_bar(s, NAVY); bot_bar(s, NAVY)
 
-section_label(s, "07  ·  Data, AI & Frontend", NAVY)
+section_label(s, "06  ·  Data, AI & Frontend", NAVY)
 slide_title(s, "The Supporting Stack — What Feeds the Decision Engine", NAVY, 28)
 divider(s, 1.62, NAVY)
 
@@ -848,7 +789,7 @@ add_text(s,
          Inches(0.6), Inches(7.07), Inches(12.1), Inches(0.32),
          bold=True, size=10, color=ICE, align=PP_ALIGN.CENTER)
 
-slide_num(s, 9, dark=False)
+slide_num(s, 8, dark=False)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SLIDE 10 — Capability Validation (single-slide consolidated layout)  (DARK)
@@ -859,7 +800,7 @@ slide_num(s, 9, dark=False)
 s = prs.slides.add_slide(BL)
 bg(s, NAVY); top_bar(s, ICE); bot_bar(s, ICE)
 
-section_label(s, "08  ·  Capability Validation")
+section_label(s, "07  ·  Capability Validation")
 slide_title(s, "Capability Validation — What I Checked")
 divider(s, 1.62)
 
@@ -977,7 +918,7 @@ add_notes(s,
     "transformation is the deliverable.\n\n"
     "Live demo runs immediately after this slide.")
 
-slide_num(s, 10)
+slide_num(s, 9)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SLIDE 11 — Limitations, Conclusions & Future Work  (LIGHT)
@@ -986,7 +927,7 @@ slide_num(s, 10)
 s = prs.slides.add_slide(BL)
 bg(s, LIGHT_BG); top_bar(s, NAVY); bot_bar(s, NAVY)
 
-section_label(s, "09  ·  Limitations, Conclusions & Future Work", NAVY)
+section_label(s, "08  ·  Limitations, Conclusions & Future Work", NAVY)
 slide_title(s, "Honest Assessment · What This Proves · Next Steps", NAVY, 28)
 divider(s, 1.62, NAVY)
 
@@ -1046,7 +987,7 @@ for i, txt in enumerate(fut):
              col3_w - Inches(0.22), Inches(0.8),
              size=10, color=WHITE)
 
-slide_num(s, 11, dark=False)
+slide_num(s, 10, dark=False)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SLIDE 12 — Thank You / Q&A  (DARK)
@@ -1078,7 +1019,7 @@ for i, (label, value) in enumerate(info_items):
     add_text(s, value, Inches(4.6), y, Inches(8.0), Inches(0.6),
              size=13, color=WHITE)
 
-slide_num(s, 12)
+slide_num(s, 11)
 
 # ── Save ──────────────────────────────────────────────────────────────────────
 out = "/Users/sabrina/Projects/shopping-assistant-4/docs/capstone_presentation_v5.pptx"
