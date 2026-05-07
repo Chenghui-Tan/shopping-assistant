@@ -756,7 +756,10 @@ def start_session(body: StartBody):
     raw_lower = (body.text or "").lower()
     if any(kw in raw_lower for kw in ("leak", "spill")):
         preferences["leak_proof_preferred"] = True
-    if any(kw in raw_lower for kw in ("heavy", "weighs", "heavy bag", "bulky")):
+    if any(kw in raw_lower for kw in (
+        "heavy", "weighs", "heavy bag", "bulky",
+        "easy to carry", "carry in", "portable", "lightweight",
+    )):
         preferences.setdefault("size_preference", "lightweight")
 
     s = session_store.create_session(body.text, category, preferences)

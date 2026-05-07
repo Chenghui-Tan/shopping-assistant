@@ -7,7 +7,7 @@ import { startSession } from '../api'
 // samples are the only place a category gets implied, and only when clicked.
 const SAMPLE_PROMPTS = [
   "I cook almost every day, but my phone screen is too small to follow recipes while cooking.",
-  "I keep losing track of how much water I drink, and my current bottle leaks in my bag.",
+  "I keep forgetting to drink enough water during the day, and I want a bottle that is easy to carry in my bag.",
   "My kitchen drawers are cluttered, and I can never find the tools I need.",
 ]
 const SAMPLE_LABELS = ['Cooking', 'Hydrating', 'Organizing']
