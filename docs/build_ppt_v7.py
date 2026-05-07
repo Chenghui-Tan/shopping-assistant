@@ -851,120 +851,131 @@ add_text(s,
 slide_num(s, 9, dark=False)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# SLIDE 10 — Results & Demo  (DARK)
-# Fix: strengthened results — added evaluation outcomes, not just impl metrics
+# SLIDE 10 — Capability Validation (single-slide consolidated layout)  (DARK)
+# Replaces the prior two-column 'Validation + Demo Walkthrough' slide.
+# Live demo replaces the demo-walkthrough column; this slide is now a
+# concise 45-60 sec validation summary.
 # ══════════════════════════════════════════════════════════════════════════════
 s = prs.slides.add_slide(BL)
 bg(s, NAVY); top_bar(s, ICE); bot_bar(s, ICE)
 
-section_label(s, "08  ·  Results & Demo")
-slide_title(s, "Capability Validation & Scenario Walkthrough")
+section_label(s, "08  ·  Capability Validation")
+slide_title(s, "Capability Validation — What I Checked")
 divider(s, 1.62)
 
-# Left — evaluation findings (the real results)
-add_rect(s, Inches(0.5), Inches(1.82), Inches(6.2), Inches(4.8), MID_BLUE)
-add_text(s, "Capability Validation",
-         Inches(0.65), Inches(1.95), Inches(5.9), Inches(0.42),
-         bold=True, size=13, color=ICE)
+# ── Layout grid ───────────────────────────────────────────────────────────────
+# Big LEFT card (Decision Transparency) sits about 50% of the width.
+# Two stacked RIGHT cards (Capability Check on top, Feedback & Review below).
+# Bottom result bar across the full width.
+LX = Inches(0.5);   LW = Inches(6.0);   LY = Inches(1.85);  LH = Inches(4.6)
+RX = Inches(6.85);  RW = Inches(6.0)
+R1Y = Inches(1.85); R1H = Inches(2.20)
+R2Y = Inches(4.25); R2H = Inches(2.20)
+BBY = Inches(6.65); BBH = Inches(0.55)
 
-findings = [
-    ("Multi-agent debate  ·  Claude Code Opus 4.7  ↔  Codex GPT-5.5",
-     "Claude Code: brainstorm · implementation · tests · iterations.\n"
-     "Codex GPT-5.5: independent evaluation + validation review.\n"
-     "Each finding either got fixed in code or dismissed in writing."),
-    ("Small-scale user testing  ·  family · friends · classmates",
-     "Confirmed that structured recommendations, preference\n"
-     "continuity, and side-by-side compare made the decision\n"
-     "process easier to follow."),
-    ("Industry mentor input",
-     "Senior Analytics Manager · Sr. BI Engineer · Data Scientist · Data\n"
-     "Engineer (Amazon, 13 years) — input on data discipline and\n"
-     "decision-support framing."),
+# ── Big left card — Decision Transparency ────────────────────────────────────
+add_rect(s, LX, LY, LW, LH, MID_BLUE)
+add_text(s, "Decision Transparency",
+         LX + Inches(0.3), LY + Inches(0.25), LW - Inches(0.4), Inches(0.55),
+         bold=True, size=22, color=WHITE)
+add_text(s, "How users can see and audit every recommendation",
+         LX + Inches(0.3), LY + Inches(0.85), LW - Inches(0.4), Inches(0.4),
+         italic=True, size=12, color=ICE)
+
+dt_bullets = [
+    ("✓", "Match / Miss / ? checklist",
+         "Every chip the user picked is shown as ✓ match · ✗ miss · ? unknown."),
+    ("✓", "Trade-offs visible",
+         "Yellow trade-off card on each pick names the cost, not just the win."),
+    ("✓", "Reasoning inspectable",
+         "Each reason maps to a rule the deterministic ranker actually fired."),
 ]
-for i, (title, body) in enumerate(findings):
-    y = Inches(2.35) + i * Inches(1.45)
-    add_text(s, f"✓  {title}", Inches(0.65), y,
-             Inches(5.9), Inches(0.38), bold=True, size=11, color=GREEN_OK)
-    add_text(s, body, Inches(0.65), y + Inches(0.34),
-             Inches(5.9), Inches(1.05), size=10, color=WHITE)
+for i, (icon, title, body) in enumerate(dt_bullets):
+    by = LY + Inches(1.55) + i * Inches(0.95)
+    # Icon badge
+    add_rect(s, LX + Inches(0.3), by + Inches(0.05),
+             Inches(0.45), Inches(0.45), NAVY)
+    add_text(s, icon, LX + Inches(0.3), by + Inches(0.05),
+             Inches(0.45), Inches(0.45),
+             bold=True, size=14, color=GREEN_OK, align=PP_ALIGN.CENTER)
+    add_text(s, title, LX + Inches(0.9), by,
+             LW - Inches(1.1), Inches(0.36),
+             bold=True, size=15, color=WHITE)
+    add_text(s, body, LX + Inches(0.9), by + Inches(0.36),
+             LW - Inches(1.1), Inches(0.5),
+             size=11, color=ICE)
 
-# Right — demo walkthrough (water-bottle scenario showcases the new
-# preference checklist, curated picks, refine, and comparison features)
-add_rect(s, Inches(6.95), Inches(1.82), Inches(5.9), Inches(4.8), RGBColor(0x2A,0x35,0x75))
-add_text(s, "Demo — Water-Bottle Scenario",
-         Inches(7.1), Inches(1.95), Inches(5.6), Inches(0.42),
-         bold=True, size=12, color=ICE)
-
-demo_steps = [
-    ("①  Need Discovery",
-     "“Current bottle is heavy and leaks\nin my gym bag.”  → water_bottle"),
-    ("②  Clarification (3 chips)",
-     "Gym · Large capacity · (leak inferred\nfrom 'leaks' in the input)"),
-    ("③  3 Curated Picks",
-     "Best Fit  Owala 24oz FreeSip\nrules: gym_suitable · large_capacity_pref · leak_proof_match"),
-    ("④  Picks — labels + checklist",
-     "Budget Pick: Zak 19oz [Cheapest · Most portable]\nStretch: Owala 32oz [Most capacity · Most leakproof]"),
-    ("⑤  Refine + Compare",
-     "‘larger’ → flips Best Fit to 32oz · diff card shown\nSelect 3, compare side-by-side with row-winners"),
+# ── Right top card — Capability Check ────────────────────────────────────────
+add_rect(s, RX, R1Y, RW, R1H, RGBColor(0x2A, 0x35, 0x75))
+add_text(s, "Capability Check",
+         RX + Inches(0.25), R1Y + Inches(0.18), RW - Inches(0.4), Inches(0.42),
+         bold=True, size=16, color=WHITE)
+cc_items = [
+    "Main gaps addressed",
+    "Preference continuity",
+    "Decision modeling",
+    "Comparison + lifecycle",
 ]
-step_h = Inches(0.85)
-for i, (step, desc) in enumerate(demo_steps):
-    y = Inches(2.45) + i * step_h
-    add_text(s, step, Inches(7.1), y,
-             Inches(5.6), Inches(0.32), bold=True, size=10.5, color=ICE)
-    add_text(s, desc, Inches(7.1), y + Inches(0.30),
-             Inches(5.6), Inches(0.55), size=9.5, color=WHITE)
+for i, txt in enumerate(cc_items):
+    by = R1Y + Inches(0.75) + i * Inches(0.34)
+    add_text(s, "•", RX + Inches(0.3), by, Inches(0.2), Inches(0.3),
+             bold=True, size=14, color=ICE)
+    add_text(s, txt, RX + Inches(0.55), by, RW - Inches(0.7), Inches(0.32),
+             size=13, color=WHITE)
 
-# Honest caveat footer — this is self-assessment, not a user study
-add_rect(s, Inches(0.5), Inches(6.78), Inches(11.45), Inches(0.42),
-         RGBColor(0x2A, 0x35, 0x75))
+# ── Right bottom card — Feedback & Review ────────────────────────────────────
+add_rect(s, RX, R2Y, RW, R2H, RGBColor(0x2A, 0x35, 0x75))
+add_text(s, "Feedback & Review",
+         RX + Inches(0.25), R2Y + Inches(0.18), RW - Inches(0.4), Inches(0.42),
+         bold=True, size=16, color=WHITE)
+fb_items = [
+    "Small-scale user feedback",
+    "Professor feedback",
+    "Industry mentor input",
+    "Implementation review",
+]
+for i, txt in enumerate(fb_items):
+    by = R2Y + Inches(0.75) + i * Inches(0.34)
+    add_text(s, "•", RX + Inches(0.3), by, Inches(0.2), Inches(0.3),
+             bold=True, size=14, color=ICE)
+    add_text(s, txt, RX + Inches(0.55), by, RW - Inches(0.7), Inches(0.32),
+             size=13, color=WHITE)
+
+# ── Bottom result bar (CORAL/ORANGE for emphasis) ────────────────────────────
+add_rect(s, Inches(0.5), BBY, Inches(12.35), BBH, ORANGE)
 add_text(s,
-         "Self-evaluation + small-scale user testing (family · friends · classmates)  ·  "
-         "formal study is future work (see Slide 11)",
-         Inches(0.5), Inches(6.82), Inches(11.45), Inches(0.36),
-         size=10, color=ICE, italic=True, align=PP_ALIGN.CENTER)
+         "Result:  vague needs  →  structured preferences  →  explainable recommendations",
+         Inches(0.5), BBY + Inches(0.08), Inches(12.35), BBH - Inches(0.16),
+         bold=True, size=14, color=WHITE, align=PP_ALIGN.CENTER)
 
 add_notes(s,
-    "Validation — three independent lenses:\n\n"
-    "1. Multi-agent debate. Claude Code (Opus 4.7) ran brainstorming, "
-    "implementation, tests, and iterations across the 12-week build. "
-    "Codex GPT-5.5 was given the role of independent technical validator "
-    "and listed every demo-safety risk it could find. Findings either "
-    "got fixed in code or got dismissed with a written reason.\n\n"
-    "2. Small-scale user testing. Family, friends, and classmates ran "
-    "the demo end-to-end. Their feedback consistently confirmed that "
-    "three things made the decision process easier to follow: structured "
-    "recommendations (3 picks instead of a long grid), visible preference "
-    "continuity (the diff card on each refine), and the side-by-side "
-    "comparison view.\n\n"
-    "3. Industry mentor input. A Senior Analytics Manager / Senior "
-    "Business Intelligence Engineer / Data Scientist / Data Engineer "
-    "with 13 years at Amazon gave feedback on data discipline (provenance "
-    "flagging, scraped vs estimated values) and on the decision-support "
-    "framing (treating shopping as a multi-criteria decision problem).\n\n"
-    "Live demo script (matches the running app exactly):\n\n"
-    "1. Type into Scene 1: 'current bottle is heavy and leaks in my gym bag'.\n"
-    "   Observe: category auto-classified as water_bottle. The route also "
-    "infers leak_proof_preferred=True from the word 'leaks'.\n\n"
-    "2. Scene 2: pick three chips — Water Bottle / Gym / Large capacity. "
-    "Skip the others. Hit 'See recommendations'.\n\n"
-    "3. Scene 3: three differentiated picks render in a row.\n"
-    "   - BEST FIT: Owala 24oz FreeSip — rules [gym_suitable, "
-    "large_capacity_pref, leak_proof_match]. The Large-capacity preference "
-    "is honoured (≥24oz) and leak-resistance is matched.\n"
-    "   - BUDGET PICK: Zak Designs 19oz — labels [Cheapest, Most portable]. "
-    "Honestly shows ✗ Large capacity (19oz) in its checklist.\n"
-    "   - LARGE CAPACITY PICK: Owala 32oz FreeSip — labels [Most capacity, "
-    "Most leakproof].\n\n"
-    "4. Click 'See why' on Best Fit. Stage 4 quotes the user's frustration, "
-    "lists the rule-grounded reasons, and shows the ✓/✗/? checklist of every "
-    "preference.\n\n"
-    "5. Refine: type 'larger'. The diff card shows size_preference None -> "
-    "large; Best Fit flips to 32oz. Demonstrates preference continuity.\n\n"
-    "6. Click compare on 2-3 picks; the side-by-side overlay highlights the "
-    "row-winner (lowest price, largest capacity, etc.) per attribute.\n\n"
-    "7. Continue to Lifecycle (prototype). Phone reminders / gym-bag checklist "
-    "/ replacement parts — honest about what the bottle can/cannot do.")
+    "Capability Validation — talking points (45–60 sec):\n\n"
+    "DECISION TRANSPARENCY (left card, the headline finding):\n"
+    "Every recommendation surfaces three things the user can audit — "
+    "a Match / Miss / ? checklist mapping their chips to match status, "
+    "an explicit trade-off card naming what the pick gives up, and "
+    "reasons that map directly to rules the deterministic ranker fired.\n\n"
+    "CAPABILITY CHECK (right top): the structural gaps from the "
+    "competitive comparison on slide 4 are addressed in code — main "
+    "gaps closed, preference continuity (diff per refine), explicit "
+    "decision modeling (multi-criteria scoring), comparison view, "
+    "and lifecycle layer.\n\n"
+    "FEEDBACK & REVIEW (right bottom): four sources fed back into "
+    "the build —\n"
+    " 1. Small-scale user feedback from family, friends, and classmates "
+    "(structured picks + preference continuity + side-by-side compare "
+    "made the decision easier to follow).\n"
+    " 2. Professor feedback during the capstone.\n"
+    " 3. Industry mentor — Senior Analytics Manager / Senior BI Engineer "
+    "/ Data Scientist / Data Engineer (Amazon, 13 years) — input on "
+    "data discipline and decision-support framing.\n"
+    " 4. Implementation review — Claude Code (Opus 4.7) build pair-"
+    "programmer + Codex GPT-5.5 independent validator cross-reviewed "
+    "the same codebase; each finding got fixed or dismissed in writing.\n\n"
+    "RESULT BAR: the system turns vague needs into structured "
+    "preferences and then into explainable recommendations — that "
+    "transformation is the deliverable.\n\n"
+    "Live demo runs immediately after this slide.")
 
 slide_num(s, 10)
 
