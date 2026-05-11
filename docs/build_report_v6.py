@@ -1097,32 +1097,58 @@ page_break()
 heading(1, "Appendix — Code Listings", "9.")
 
 heading(2, "9.1  ETL Pipeline Orchestrator (run_pipeline.py — excerpt)")
-code_block('''def run_pipeline(categories: list[str]) -> dict:
-    """Drive scrapers, then normalize. Always continues on per-source failure."""
-    raw = {}
-    for cat in categories:
-        for src in SOURCE_BY_CATEGORY[cat]:
-            try:
-                raw.setdefault(cat, []).extend(SCRAPERS[src](cat))
-            except Exception as e:
-                logger.warning("scraper %s/%s failed: %s", src, cat, e)
-                continue
-    return normalize.run(raw)''')
-caption("Listing 1: Top-level pipeline orchestration. Scrapes each category from each source, "
-        "tolerates per-source failures, then defers to the normalizer for canonicalization.")
+code_block('''async def run(categories: list[str], headed: bool) -> None:
+    """Drive scrapers, then normalize and clean. Tolerates per-source failures."""
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    CLEAN_DIR.mkdir(parents=True, exist_ok=True)
+    all_raw: list[list[ScrapedProduct]] = []
+
+    for i, cfg in enumerate(PIPELINE):
+        cat = cfg["category"]
+        if categories and cat not in categories:
+            continue
+        products = await scrape_with_fallback(cfg, headed)
+        if products:
+            products = await boost_with_supplements(products, cfg, headed)
+            with open(RAW_DIR / cfg["filename"], "w", encoding="utf-8") as f:
+                json.dump(products, f, indent=2, ensure_ascii=False)
+            all_raw.append(products)
+        if i < len(PIPELINE) - 1:
+            await asyncio.sleep(random.uniform(5, 10))   # human-like pause
+
+    if all_raw:
+        cleaned = clean_and_combine(all_raw)
+        with open(CLEAN_DIR / "products_clean.json", "w", encoding="utf-8") as f:
+            json.dump(cleaned, f, indent=2, ensure_ascii=False)''')
+caption("Listing 1: Top-level pipeline orchestration. Iterates the PIPELINE config, "
+        "scrapes each category with a primary + fallback source, boosts with "
+        "supplemental queries when counts are low, then defers to clean_and_combine "
+        "for normalization + deduplication.")
 
 heading(2, "9.2  Delivery Normalization (normalize.py — excerpt)")
-code_block('''def parse_delivery(text: str | None) -> int | None:
-    """'Get it Tue, May 21' → days from today, else None."""
-    if not text:
+code_block('''def normalize_delivery(raw: str | None) -> int | None:
+    """Convert delivery text to number of days from today."""
+    if not raw:
         return None
-    m = DATE_RE.search(text)
-    if not m:
-        return None
-    target = parse_date(m.group(1))
-    return max(0, (target - date.today()).days)''')
+    s = raw.lower().strip()
+
+    if "today" in s or "same day" in s:  return 0
+    if "tomorrow" in s:                  return 1
+
+    # "in N days" / "N-day shipping" / "N day"
+    for pat in (r"in\\s+(\\d+)\\s+day", r"(\\d+)-day", r"(\\d+)\\s+day"):
+        m = re.search(pat, s)
+        if m:
+            return int(m.group(1))
+
+    # Absolute date: "by Mon, Mar 14" / "arrives Mar 14"
+    m = re.search(r"(?:by|arrives?|get it by)[^a-z]*([a-z]{3})\\w*\\s*[,.]?\\s*(\\d{1,2})", s)
+    if m:
+        return _days_until_month_day(m.group(1), m.group(2))
+    return None''')
 caption("Listing 2: Delivery-string parser. Returns None on unparseable text; the ranker treats "
-        "None as a neutral 0.5 sub-score so missing data does not bias ranking.")
+        "None as a neutral 0.5 sub-score so missing data does not bias ranking. "
+        "Real implementation handles four more formats (date ranges, standalone month-day, etc.).")
 
 heading(2, "9.3  Constraint-Aware Ranking (recommendation_engine_refactored.py — excerpt)")
 code_block('''def recommend_products(prefs: dict, top_n: int = 10) -> list[dict]:
@@ -1153,48 +1179,83 @@ caption("Listing 3: Three-tier fallback. Each tier relaxes one constraint; the r
         "returns an empty list as long as the dataset is non-empty.")
 
 heading(2, "9.4  Scoring Rule (water_bottle gym example)")
-code_block('''def _score_water_bottle(product, prefs, features):
+code_block('''def _score_water_bottle(product, preferences, features):
+    use_case = preferences.get("use_case", "")
     score, matches = 0.0, []
-    if prefs.get("use_case") == "gym":
+
+    if use_case == "gym":
         score = _apply_rule(score, matches,
-            features["lightweight"] or _title_has(product, "freesip", "owala"),
+            features["lightweight"] or _title_has(product, "freesip", "owala", "stainless steel"),
             "gym_suitable")
         score = _apply_rule(score, matches, features["insulated"], "insulated_gym")
-    if prefs.get("insulated"):
+
+    if preferences.get("insulated"):
         score = _apply_rule(score, matches, features["insulated"],
-            "insulated", penalty=_SOFT_PENALTY)
+                            "insulated", penalty=_SOFT_PENALTY)
+    # ... size_preference, material_preference, drinking_style, leak_proof_preferred ...
     return score, matches''')
-caption("Listing 4: Category-specific scoring for the water-bottle gym use case. Bonuses are "
-        "+0.10 per matched rule; soft penalties are −0.05 per missed rule the user requested.")
+caption("Listing 4: Category-specific scoring for the water-bottle gym use case. Each matched "
+        "rule adds +0.10; each user-requested-but-missing feature subtracts the soft penalty −0.05. "
+        "Real function has parallel branches for daily / outdoor / kids and for the four "
+        "explicit-feature preferences.")
 
 heading(2, "9.5  FastAPI Routes (main.py — excerpt)")
 code_block('''@app.post("/session/start")
 def start_session(body: StartBody):
+    # Best-effort LLM parse; fall back to chip selection on any failure.
     try:
         parsed = claude_client.parse_initial_input(body.text)
         category = parsed.get("category", "unknown")
         preferences = parsed.get("preferences", {})
     except Exception:
-        category, preferences = "unknown", {}     # graceful degradation
+        category, preferences = "unknown", {}
 
-    if category in ("unknown", ""):
-        return {"session_id": s["session_id"], "category": None,
-                "next_question": None, "chips": CATEGORY_CHIPS}
-    return {"session_id": s["session_id"], "category": category,
-            "next_question": _next_question(s), "chips": None}''')
-caption("Listing 5: Session-start endpoint. The try/except keeps the demo functional when no "
-        "Anthropic API key is available — chip selection becomes the fallback path.")
+    # Deterministic category fallback when the LLM didn't classify.
+    if category in ("unknown", "", None):
+        inferred = _classify_category(body.text)
+        if inferred:
+            category = inferred
+
+    # Implicit preference inference from the raw text.
+    raw_lower = (body.text or "").lower()
+    if any(k in raw_lower for k in ("leak", "spill")):
+        preferences["leak_proof_preferred"] = True
+    if any(k in raw_lower for k in ("heavy", "bulky", "easy to carry", "portable")):
+        preferences.setdefault("size_preference", "lightweight")
+
+    s = session_store.create_session(body.text, category, preferences)
+    return {
+        "session_id": s["session_id"],
+        "category": category or None,
+        "next_question": _next_question(s) if category else None,
+        "chips": None if category else CATEGORY_CHIPS,
+        "preferences": preferences,
+        "reply": _empathic_reply(category, preferences, body.text),
+    }''')
+caption("Listing 5: Session-start endpoint. The LLM is best-effort; on failure a regex "
+        "classifier (_classify_category) routes the input. Implicit preferences "
+        "are inferred from the raw text so the chip-pre-fill in Stage 2 can reflect "
+        "what the user already said.")
 
 heading(2, "9.6  Trust Boundary in the Recommendation Pipeline")
-code_block('''def _run_recommendations(session: dict) -> list[dict]:
+code_block('''def _run_recommendations(session: dict) -> tuple[list[dict], str]:
     prefs = {**session["preferences"], "category": session["category"]}
-    products = engine.recommend_products(prefs, top_n=12)   # deterministic
+    # Deterministic — never an LLM call. Returns (products, relaxation_tier).
+    products, relaxation = engine.recommend_with_relaxation(prefs, top_n=12)
     try:
         explanations = claude_client.write_explanations(
             products, session["preferences"], session["raw_input"])
     except Exception:
-        explanations = [p.get("_explanation", "") for p in products]  # fallback
-    return [_format_product(p, explanations[i]) for i, p in enumerate(products)]''')
+        explanations = []                                          # LLM unavailable
+    explanations = _normalize_explanations(products, explanations) # exactly one per product
+
+    formatted = []
+    for i, p in enumerate(products):
+        row = _format_product(p, explanations[i])
+        row["pref_checks"] = _preference_checks(p, prefs)          # ✓ / ✗ / ? per chip
+        formatted.append(row)
+    session_store.set_recommendations(session["session_id"], formatted)
+    return formatted, relaxation''')
 caption("Listing 6: Where the trust boundary lives in code. Ranking is a pure function call; "
         "explanation generation is best-effort and gracefully falls back to the deterministic "
         "explainer.")
