@@ -153,15 +153,20 @@ def bottle_material(title: str) -> str | None:
 # --- Bottle drinking style ---------------------------------------------------
 
 def bottle_drinking_style(title: str) -> str | None:
+    # Only return values that exist in the Stage 2 chip vocabulary
+    # (freesip | straw | standard | kids). Anything else returns None
+    # so the engine's drink_pref check skips the product instead of
+    # soft-penalising every chip selection.
     if not title:
         return None
     tl = title.lower()
     if "freesip" in tl:        return "freesip"
     if "straw" in tl:          return "straw"
-    if "spout" in tl:          return "spout"
     if "kids" in tl or "kid's" in tl: return "kids"
-    if any(k in tl for k in ["pop and fill", "easy fill", "wide mouth"]):
-        return "wide_mouth"
+    if any(k in tl for k in ["screw cap", "screw-cap", "screw top",
+                             "twist cap", "standard cap", "standard lid",
+                             "classic lid"]):
+        return "standard"
     return None
 
 

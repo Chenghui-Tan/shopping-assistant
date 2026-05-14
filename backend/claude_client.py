@@ -10,10 +10,31 @@ _PARSE_SYSTEM = """\
 You are a shopping assistant. Extract structured shopping intent from user input.
 Return ONLY a JSON object with this exact shape:
 {"category": "kitchen_organizer|water_bottle|smart_display|unknown",
- "preferences": {"use_area": null, "pain_point": null, "structure_type": null,
-                 "use_case": null, "insulated": null, "size_preference": null,
-                 "price_max": null, "delivery_days_max": null, "priority": "balanced"}}
+ "preferences": {
+   "use_area": null, "pain_point": null, "structure_type": null,
+   "use_case": null, "insulated": null, "size_preference": null,
+   "price_max": null, "delivery_days_max": null, "priority": "balanced",
+   "voice_ecosystem": null, "placement": null,
+   "screen_size_priority": null, "privacy_camera": null,
+   "material_preference": null, "drinking_style": null,
+   "organizer_material": null, "visibility_priority": null
+ }}
 Fill in any preference you can confidently infer. Leave others null.
+Allowed values per key (use these exact tokens, not free text):
+  use_area:             cabinet | countertop | under_sink
+  pain_point:           not_enough_space | hard_to_find_things
+  structure_type:       stackable | drawer | bin | expandable | lazy_susan
+  use_case (smart_display): cooking | family | entertainment | smart_home
+  use_case (water_bottle):  gym | daily | outdoor | kids
+  size_preference:      lightweight | large
+  voice_ecosystem:      alexa | google | apple | none
+  placement:            kitchen | wall | living_room | bedroom
+  screen_size_priority: compact | mid | large | any
+  privacy_camera:       ok | no_camera | any
+  material_preference:  stainless | plastic | any
+  drinking_style:       freesip | straw | standard | kids | any
+  organizer_material:   plastic | bamboo | metal | any
+  visibility_priority:  clear | opaque | any
 price_max must be a number or null. delivery_days_max must be a number or null.
 insulated must be true, false, or null. Set category to "unknown" if not confident.\
 """
@@ -73,7 +94,7 @@ def map_free_text_answer(question_key: str, question_text: str, answer_text: str
 
 
 def write_explanations(products: list[dict], preferences: dict, raw_input: str) -> list[str]:
-    """Write one personal explanation per product. Returns list of 5 strings."""
+    """Write one personal explanation per product. Returns exactly one string per product."""
     summaries = "\n".join(
         f"{i+1}. {p['title']} — ${p['price']}, {p.get('rating', 'N/A')}★"
         for i, p in enumerate(products)

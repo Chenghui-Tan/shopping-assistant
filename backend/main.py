@@ -713,12 +713,13 @@ def _classify_category(text: str) -> str | None:
     lower = text.lower()
     # Score each category by how many patterns match. Tied scores prefer
     # smart_display > water_bottle > kitchen_organizer (model fanciness).
+    _TIE_PRIORITY = ["smart_display", "water_bottle", "kitchen_organizer"]
     scores = {cat: 0 for cat in _CATEGORY_KEYWORD_PATTERNS}
     for cat, pats in _CATEGORY_KEYWORD_PATTERNS.items():
         for p in pats:
             if _re.search(p, lower):
                 scores[cat] += 1
-    best_cat = max(scores, key=lambda c: scores[c])
+    best_cat = max(scores, key=lambda c: (scores[c], -_TIE_PRIORITY.index(c)))
     return best_cat if scores[best_cat] > 0 else None
 
 
@@ -835,11 +836,7 @@ def recommend(body: RecommendBody):
     # Build the 3-card curated picks alongside the full ranking.
     # Frontend Stage 3 leads with the picks; the full list is collapsed
     # below as "all options".
-    raw_ranked = [
-        {**p, **{k: v for k, v in p.items() if k not in ("explanation",)}}
-        for p in products
-    ]
-    picks_raw = engine.curated_picks(raw_ranked, s["category"])
+    picks_raw = engine.curated_picks(products, s["category"])
     # Re-format picks the same way as products (preserves pick_label/reason).
     picks = []
     for p in picks_raw:

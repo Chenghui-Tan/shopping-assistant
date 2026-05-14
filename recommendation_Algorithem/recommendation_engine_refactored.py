@@ -603,7 +603,7 @@ def _score_kitchen_organizer(
         prod_mat = product.get("organizer_material")
         if prod_mat is not None:
             score = _apply_rule(score, matches, prod_mat == mat_pref,
-                                f"organiser_material_{mat_pref}", penalty=_SOFT_PENALTY)
+                                f"organizer_material_{mat_pref}", penalty=_SOFT_PENALTY)
 
     # Visibility — clear is the most common ask. Use as a soft pref.
     vis_pref = preferences.get("visibility_priority")
@@ -760,6 +760,14 @@ def curated_picks(
     picks: list[dict[str, Any]] = []
     used: set[str] = set()
 
+    # Score lookup tolerant of both shapes: the raw engine output uses
+    # `_score`, but the route hands us already-formatted products where
+    # the same number is stored as `score`. Without this fallback the
+    # 75 % score-floor on Budget Pick silently collapses to 0.
+    def _sc(p: dict) -> float:
+        s = p.get("_score")
+        return (s if s is not None else p.get("score")) or 0.0
+
     def add(p: dict, label: str, reason: str) -> None:
         url = p.get("product_url") or p.get("title", "")
         if url in used:
@@ -785,12 +793,12 @@ def curated_picks(
     #    candidate (don't repeat Best Fit) and require it to score
     #    within 25% of the top score so we don't suggest something
     #    objectively worse just because it's cheap.
-    top_score = best.get("_score") or 0.0
+    top_score = _sc(best)
     score_floor = top_score * 0.75
     budget_pool = sorted(
         [p for p in comparable
          if p.get("product_url") != best.get("product_url")
-         and (p.get("_score") or 0.0) >= score_floor],
+         and _sc(p) >= score_floor],
         key=lambda p: p.get("price") or 1e9,
     )
     if budget_pool:

@@ -33,5 +33,10 @@ htmlcov/
 # Overnight build artifacts (transient)
 overnight.log
 overnight.pid
+overnight_prompt.md
 docs/~$*.docx
 docs/~$*.pptx
+
+# Claude Code session metadata (local IDE state, not source)
+.claude/
+.superpowers/
