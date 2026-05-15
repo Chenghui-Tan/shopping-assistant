@@ -224,12 +224,21 @@ cover_line("Explainable Recommendations",               size=16, after=14)
 hr()
 
 # Big vertical space, then author + degree + date stack
-for _ in range(6): doc.add_paragraph()
+for _ in range(4): doc.add_paragraph()
 cover_line("Chenghui Tan",                                       size=14, bold=True, after=6)
 cover_line("Faculty Advisor: Dr. Surendra Sarnikar",             size=12, after=10)
 cover_line("Master of Science in Business Analytics (MSBA)",     size=12, after=2)
 cover_line("California State University, East Bay",              size=12, after=10)
 cover_line("May 2026",                                           size=12, after=0)
+
+# Small repository line, lower on the cover, in a discreet dark navy.
+_repo_p = doc.add_paragraph(); _repo_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+_repo_p.paragraph_format.space_before = Pt(36)
+_repo_p.paragraph_format.space_after  = Pt(0)
+_repo_run = _repo_p.add_run(
+    "Project Repository: github.com/Chenghui-Tan/shopping-assistant"
+)
+set_font(_repo_run, size=10, color=(0x1F, 0x3A, 0x5F))
 
 page_break()
 
@@ -1734,6 +1743,6 @@ caption("Listing 9: Regex fallback parser. Three categories of phrase are handle
         "like this; the demo runs end-to-end with ANTHROPIC_API_KEY=placeholder.")
 
 # ─── Save ──────────────────────────────────────────────────────────────────────
-out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v15.docx")
+out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v16.docx")
 doc.save(out_path)
 print(f"saved {out_path}")
