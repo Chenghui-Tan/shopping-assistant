@@ -226,9 +226,9 @@ hr()
 # Big vertical space, then author + degree + date stack
 for _ in range(6): doc.add_paragraph()
 cover_line("Chenghui Tan",                                       size=14, bold=True, after=6)
+cover_line("Faculty Advisor: Dr. Surendra Sarnikar",             size=12, after=10)
 cover_line("Master of Science in Business Analytics (MSBA)",     size=12, after=2)
 cover_line("California State University, East Bay",              size=12, after=10)
-cover_line("Faculty Advisor: Dr. Surendra Sarnikar",             size=12, after=10)
 cover_line("May 2026",                                           size=12, after=0)
 
 page_break()
@@ -1734,6 +1734,6 @@ caption("Listing 9: Regex fallback parser. Three categories of phrase are handle
         "like this; the demo runs end-to-end with ANTHROPIC_API_KEY=placeholder.")
 
 # ─── Save ──────────────────────────────────────────────────────────────────────
-out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v14.docx")
+out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v15.docx")
 doc.save(out_path)
 print(f"saved {out_path}")
