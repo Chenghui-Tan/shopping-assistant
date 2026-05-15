@@ -450,7 +450,7 @@ page_break()
 # ════════════════════════════════════════════════════════════════════════════
 heading(1, "Related Work", "2.")
 para(
-    "Four bodies of literature bear on the design of a decision-oriented shopping assistant. "
+    "Three bodies of literature bear on the design of a decision-oriented shopping assistant. "
     "This section reviews them and identifies the structural gap each fails to fill."
 )
 
@@ -482,7 +482,7 @@ heading(2, "Recommender Systems and Explainability", "2.3")
 para(
     "Traditional recommender systems focus on predicting user behavior or preferences using "
     "historical data and machine-learning models — collaborative filtering, content-based ranking, "
-    "matrix factorisation, and most recently transformer-based sequence models [1], [12]. While "
+    "matrix factorization, and most recently transformer-based sequence models [1], [12]. While "
     "effective at ranking items, they often operate as opaque black boxes and optimize for "
     "engagement (click-through, dwell time) rather than decision clarity. A growing literature on "
     "explainable recommendation [13], [14] argues that explanations grounded in user-stated "
@@ -593,10 +593,10 @@ caption("Table 4: Product-record schema. Inferred features (insulated, voice_con
 
 heading(2, "Limitations and Provenance", "3.4")
 para(
-    "Three limitations bound the dataset's expressiveness, the first two with explicit "
+    "Four limitations bound the dataset's expressiveness, the first two with explicit "
     "provenance flags so downstream readers can distinguish scraped from estimated values. "
     "(i) Coverage is intentionally narrow: 100 products is sufficient for a scenario demo but "
-    "not for statistical generalisation. "
+    "not for statistical generalization. "
     "(ii) Delivery time is partially scraped: 28 of 100 products carry a verified "
     "arrival_time_days from the source page; the remaining 72 (all Target products, where "
     "the scraper could not reliably extract a delivery date) are filled with a deterministic "
@@ -825,11 +825,11 @@ para(
 )
 para(
     "Two design decisions are notable. First, scraping operates with conservative anti-detection: "
-    "human-like delays of 1.5–4.0 s between page loads, randomised mouse trajectories, and a "
+    "human-like delays of 1.5–4.0 s between page loads, randomized mouse trajectories, and a "
     "realistic Chromium fingerprint. Second, normalization is fail-soft: a record missing "
     "delivery_time_days is kept (with a None) rather than dropped, because the ranker's shared "
     "scoring layer treats None as a neutral 0.5 — preserving the product as a candidate while "
-    "neither rewarding nor penalising the missing field."
+    "neither rewarding nor penalizing the missing field."
 )
 
 heading(2, "Dimensional Model", "4.4")
@@ -1060,25 +1060,26 @@ heading(1, "Results", "5.")
 heading(2, "Scenario-Based Evaluation", "5.1")
 para(
     "Three scripted scenarios — one per product category — exercise the full "
-    "five-stage flow and compare the system's behavior against two reference assistants "
-    "(Amazon Rufus and ChatGPT-with-Shopping). Each scenario is end-to-end: free-form "
+    "five-stage flow and compare the system's behavior against three reference assistants "
+    "(Amazon Rufus, ChatGPT Shopping, and Google Shopping; see §5.2 Table 10). Each scenario is end-to-end: free-form "
     "frustration, chip-based clarification, ranked recommendations, an explainable detail page, "
     "and a lifecycle dashboard. The full scripts and operator notes are in `docs/demo_scenarios.md`."
 )
 make_table([
-    ("Scenario",           "Top-1 product (this project)",                                         "Score"),
-    ("Kitchen cooking",    "Echo Show 8 / Echo Show 5 with Smart Bulb (~$50–$140)",                "0.82"),
-    ("Gym hydration",      "Owala FreeSip 19oz Insulated Stainless ($14.99)",                       "0.79"),
-    ("Cabinet organization", "Brightroom Stackable Pantry Bin Set ($9–$16)",                       "0.81"),
+    ("Scenario",             "Top-1 product (this project)",                                        "Score"),
+    ("Kitchen cooking",      "Echo Show 8 with TP-Link Tapo Smart Color Bulb ($158)",               "1.12"),
+    ("Gym hydration",        "Zak Designs 19oz Stitch Stainless Steel ($14.99)",                    "1.30"),
+    ("Cabinet organization", "Brightroom 3-Tier Expandable Shelf, Clear ($24)",                     "1.25"),
 ], col_widths=[1.7, 3.6, 0.7])
-caption("Table 9: Top-1 result per scripted scenario. Score is the combined "
+caption("Table 9: Top-1 result per scripted scenario, taken directly from the "
+        "engine output that also drives Figure 4. Score is the combined "
         "shared+category score on the [0, ~1.4] scale used by the ranker.")
 
 para(
     "Figure 4 plots the distribution of combined scores across each scenario's "
     "candidate pool. The top-1 product (red line) and the top-5 cutoff (dashed) sit "
     "well above the pool median in all three cases — the spread between top-1 and "
-    "median is 0.23, 0.37, and 0.30 score-units respectively, in a distribution that "
+    "median is 0.32, 0.35, and 0.61 score-units respectively, in a distribution that "
     "rarely exceeds 1.5 units of total range. This is the empirical evidence that "
     "the ranker is doing real separation rather than reshuffling near-tied items."
 )
@@ -1091,7 +1092,7 @@ if os.path.exists(fig_path):
     fig_p.paragraph_format.space_after = Pt(2)
     fig_p.add_run().add_picture(fig_path, width=Inches(6.4))
     caption("Figure 4: Combined-score distribution per scenario across the candidate pool. "
-            "Red line = top-1 product, dashed line = top-5 cutoff. Top-1 sits 0.23–0.37 "
+            "Red line = top-1 product, dashed line = top-5 cutoff. Top-1 sits 0.32–0.61 "
             "score-units above the pool median, demonstrating the ranker meaningfully "
             "separates strong matches from average ones.")
 
@@ -1146,7 +1147,12 @@ para(
 heading(2, "Worked Numerical Example — Best Fit", "5.4")
 para(
     "To make the ranking reproducible rather than asserted, this section walks the exact "
-    "computation that produced the Best Fit for the smart-display scenario with chips "
+    "computation behind the Best Fit pick for a smart-display session. The chip set "
+    "used here is deliberately simplified relative to the §5.1 Kitchen-cooking scenario "
+    "in Table 9 (which adds an Alexa-ecosystem chip, a Mid screen-size chip, and a $250 "
+    "price cap, all of which fire additional category rules and push the combined score "
+    "to 1.12). The intent of this section is to make the arithmetic legible end-to-end, "
+    "not to reproduce the full Table 9 figure. The chips used here are: "
     "'Cooking · I'm new to this · Kitchen counter · Doesn't matter (screen) · Doesn't "
     "matter (camera) · No limit (price)'. After the hard-constraint filter (no chip "
     "imposes a numeric ceiling), 29 of 30 smart-display products survive. Pool statistics: "
@@ -1275,7 +1281,7 @@ make_table([
                    "_PARSE_SYSTEM extended with all eight keys plus their allowed-value enums, mirroring the Stage 2 chip vocabulary."),
     ("Important",  "_classify_category tie-break behavior contradicted its own comment — max() returned dict-iteration order (water_bottle) on a tie instead of the documented smart_display > water_bottle > kitchen_organizer priority.",
                    "Added explicit _TIE_PRIORITY tuple in the max() key so the documented priority is what actually fires on ties."),
-    ("Important",  "drinking_style extractor emitted values (spout, wide_mouth) not present in the Stage 2 chip vocabulary, and never emitted 'standard' — so picking 'Standard cap' silently soft-penalised every product with any extracted style.",
+    ("Important",  "drinking_style extractor emitted values (spout, wide_mouth) not present in the Stage 2 chip vocabulary, and never emitted 'standard' — so picking 'Standard cap' silently soft-penalized every product with any extracted style.",
                    "Extractor aligned to the chip vocabulary (freesip · straw · standard · kids). Out-of-vocabulary titles now return None and skip the drink_pref check."),
     ("Cosmetic",   "Dead-code raw_ranked spread in /session/recommend produced an identical copy of products before passing to curated_picks.",
                    "Removed; products are passed directly to curated_picks."),
@@ -1466,8 +1472,10 @@ page_break()
 heading(1, "Appendix — Code Listings", "9.")
 para(
     "Full source code repository: https://github.com/Chenghui-Tan/shopping-assistant. "
-    "The excerpts in this appendix are reproduced verbatim from the open-source "
-    "repository above; see each listing's filename header for the canonical path."
+    "The excerpts in this appendix are reproduced from the open-source repository above "
+    "with light reformatting for layout (line wrapping, dropped type annotations, "
+    "elided print statements); each listing's filename header points to the canonical "
+    "path for the unabridged source."
 )
 
 heading(2, "ETL Pipeline Orchestrator (run_pipeline.py — excerpt)", "9.1")
@@ -1743,6 +1751,6 @@ caption("Listing 9: Regex fallback parser. Three categories of phrase are handle
         "like this; the demo runs end-to-end with ANTHROPIC_API_KEY=placeholder.")
 
 # ─── Save ──────────────────────────────────────────────────────────────────────
-out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v16.docx")
+out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v17.docx")
 doc.save(out_path)
 print(f"saved {out_path}")
