@@ -241,7 +241,9 @@ heading(1, "Table of Contents")
 toc_rows = [
     ("Abstract", "3"),
     ("1.  Introduction / Business Problem", "4"),
-    ("    1.4  Scope and What This Report Is Not", "5"),
+    ("    1.1  Research Objectives and Questions", "5"),
+    ("    1.2  Gap → Feature → Evidence Overview", "5"),
+    ("    1.3  Scope and Boundaries", "6"),
     ("2.  Related Work", "6"),
     ("    2.1  Search-Oriented E-Commerce Platforms", "6"),
     ("    2.2  Conversational Shopping Assistants", "6"),
@@ -258,7 +260,7 @@ toc_rows = [
     ("    4.4  Dimensional Model", "13"),
     ("    4.5  Ranking and Decision Logic", "14"),
     ("    4.6  Explainability Layer", "15"),
-    ("    4.7  Visualization and Five-Scene UI", "16"),
+    ("    4.7  Visualization and Five-Stage User Interface", "16"),
     ("    4.8  Preference Continuity Across Turns", "16"),
     ("    4.9  Personalized Lifecycle Layer", "17"),
     ("    4.10 Curated Three-Pick Layer + Factual Trade-off Labels", "18"),
@@ -314,9 +316,13 @@ para(
     "stability across model upgrades, and explainability by construction. A Playwright-based ETL "
     "pipeline collects and normalizes 100 products across three categories from Amazon and Target; "
     "a React + FastAPI stack delivers the implementation. Scenario-based evaluation across three "
-    "demo journeys shows the system addresses four structural gaps — preference continuity, decision "
-    "transparency, delivery information, and lifecycle support — that are absent from Amazon Rufus, "
-    "ChatGPT Shopping, and Google Shopping. Two qualitative claims are realised "
+    "demo journeys indicates that, within the scope of the prototype, the system addresses four "
+    "structural gaps — preference continuity, decision-attribute visibility, faithful explanations, "
+    "and post-purchase lifecycle support — that are weakly handled by Amazon Rufus, ChatGPT "
+    "Shopping, and Google Shopping. These four gaps are broad categories; the seven detailed "
+    "capabilities discussed in the accompanying presentation slides decompose them into "
+    "finer-grained behaviours (e.g., trade-off cards, relaxation banners, lifecycle "
+    "personalisation). Two qualitative claims are realised "
     "in code rather than asserted in prose: explanations are grounded in the same rule_matches "
     "the ranker actually used (a shared rule->text dictionary spans backend and frontend), "
     "and preference continuity is visible to the user as a diff card per refine turn. "
@@ -349,13 +355,15 @@ para(
     "rankings poorly, treating the ranker as a black box [3], [4]."
 )
 para(
-    "The business cost of this friction is real. Cart abandonment in U.S. e-commerce hovered at "
-    "70.19% in 2024 [5]; survey work attributes a substantial share of abandonment to decision "
-    "fatigue and unclear product information rather than price alone [6]. Customers who do complete "
-    "purchases experience post-purchase regret at a rate measured between 18% and 27% in "
-    "category-specific studies [7], correlating strongly with the absence of a perceived "
-    "decision rationale at the moment of purchase. Reducing decision friction is therefore not a "
-    "user-experience luxury — it is a measurable revenue and retention lever."
+    "The business relevance of this friction is well documented. Cart abandonment in U.S. "
+    "e-commerce was reported at approximately 70% in 2024 [5], and survey work attributes a "
+    "substantial share of abandonment to decision fatigue and unclear product information "
+    "rather than price alone [6]. Consumer-behaviour studies have also reported non-trivial "
+    "rates of post-purchase regret across product categories [7], often associated with the "
+    "absence of a clear decision rationale at the moment of purchase. Reducing decision "
+    "friction is therefore a plausible lever for conversion and retention, although "
+    "quantifying the size of any such effect requires controlled studies that lie outside "
+    "the scope of this project."
 )
 para(
     "This project addresses the gap. The proposed system integrates five logical layers — preference "
@@ -369,7 +377,49 @@ para(
     "demonstrating the system."
 )
 
-heading(2, "Scope and What This Report Is Not", "1.4")
+heading(2, "Research Objectives and Questions", "1.1")
+para(
+    "This project investigates whether a conversational shopping assistant can improve "
+    "decision support by combining structured preference elicitation, deterministic "
+    "ranking, and rule-grounded explanations. The investigation is organised around "
+    "three research questions:"
+)
+bullet("RQ1: Can vague, free-text shopping needs be converted reliably into a "
+       "structured set of product preferences without requiring users to learn a "
+       "filter vocabulary?")
+bullet("RQ2: Can deterministic, rule-based ranking deliver explainable recommendations "
+       "while preserving preference continuity across multiple refinement turns?")
+bullet("RQ3: Can a five-layer architecture (elicitation, decision modeling, ranking, "
+       "explainability, lifecycle) support an end-to-end decision-oriented shopping "
+       "workflow within the scope of a small, multi-category prototype?")
+para(
+    "Each research question is answered against the prototype implementation described "
+    "in Section 4 and the scenario-based evaluation in Section 5. Findings should be "
+    "read as evidence from a prototype rather than generalisable claims about live "
+    "commerce systems."
+)
+
+heading(2, "Gap → Feature → Evidence Overview", "1.2")
+para(
+    "Table 1 summarises the mapping between the four structural gaps identified in "
+    "current shopping assistants, the system feature designed to address each gap, "
+    "and the evaluation evidence presented later in this report."
+)
+make_table([
+    ("Structural gap",                 "System feature",                                "Evidence in §5"),
+    ("Preference continuity",          "Diff-card refine memory (§4.8)",                "§5.3, §5.6"),
+    ("Decision-attribute visibility",  "Price + delivery + trade-off cards (§4.6, §4.10)", "§5.1, §5.2"),
+    ("Faithful explanations",          "Rule-grounded reasons via shared rule→text map (§4.6)", "§5.4"),
+    ("Post-purchase lifecycle",        "Stage-5 personalised dashboard (§4.9)",         "§5.3"),
+], col_widths=[1.9, 2.3, 1.6])
+caption("Table 1: Mapping of the four structural gaps to system features and the "
+        "scenario-based evidence presented in Section 5. The four gaps in this report "
+        "are broad categories; the seven detailed capabilities described in the "
+        "presentation slides decompose these four categories into finer-grained "
+        "behaviours (e.g., trade-off cards, relaxation banners, lifecycle "
+        "personalisation are sub-features under gaps 2 and 4).")
+
+heading(2, "Scope and Boundaries", "1.3")
 para(
     "Three boundaries shape every claim in this report and are worth stating up front. "
     "(i) The dataset is intentionally narrow — 100 products across three categories (smart "
@@ -462,7 +512,7 @@ para(
 )
 
 heading(2, "Data Characteristics", "3.2")
-para("The final cleaned dataset contains 100 products distributed as shown in Table 1.")
+para("The final cleaned dataset contains 100 products distributed as shown in Table 2.")
 make_table([
     ("Category",          "Source",             "Count"),
     ("Smart Display",     "Amazon (+ Best Buy)", "30"),
@@ -470,7 +520,7 @@ make_table([
     ("Kitchen Organizer", "Target",              "35"),
     ("Total",             "—",                   "100"),
 ], col_widths=[2.4, 2.2, 1.1])
-caption("Table 1: Product dataset composition by category and source.")
+caption("Table 2: Product dataset composition by category and source.")
 
 heading(2, "Decision-Relevant Features", "3.3")
 para(
@@ -493,7 +543,7 @@ make_table([
     ("arrival_time_days",  "int",     "filter (delivery_days_max), shared scoring"),
     ("source",             "string",  "provenance & explanation grounding"),
 ], col_widths=[1.6, 1.0, 3.4])
-caption("Table 2: Product-record schema. Inferred features (insulated, voice_control, …) are "
+caption("Table 3: Product-record schema. Inferred features (insulated, voice_control, …) are "
         "derived at scoring time rather than stored as columns.")
 
 heading(2, "Limitations and Provenance", "3.4")
@@ -587,7 +637,7 @@ para(
     "has its own short chip-driven flow, designed around the questions a domain expert would ask "
     "for that purchase. The flows are declared in backend/questions.py (QUESTION_SEQUENCES). All "
     "three end with the same budget question so a hard price cap can prune the candidate set "
-    "before scoring, but everything else is category-specific. Table 3 lists the six questions "
+    "before scoring, but everything else is category-specific. Table 4 lists the six questions "
     "asked per category, in the order the user sees them."
 )
 make_table([
@@ -599,7 +649,7 @@ make_table([
     ("5",    "privacy_camera",           "size_preference",      "visibility_priority"),
     ("6",    "price_max",                "price_max",            "price_max"),
 ], col_widths=[0.5, 2.2, 2.0, 2.0])
-caption("Table 3: Per-category Stage 2 question sequence. Step 1 differs in semantics across "
+caption("Table 4: Per-category Stage 2 question sequence. Step 1 differs in semantics across "
         "categories (a smart-display use case is multi-select because cooking and family-calendar "
         "are not mutually exclusive; a water-bottle use case is single-select). Step 6 is the "
         "shared budget filter.")
@@ -619,8 +669,8 @@ para(
 bullet("Hard filters cut the candidate set before any scoring runs. The current hard filters are "
        "price_max (price ≤ cap), delivery_days_max (arrival ≤ cap, products with no delivery data "
        "are kept), and privacy_camera=\"no_camera\" (excludes every product whose has_camera "
-       "attribute is true, e.g. the entire Echo Show 8/10/15/21 line). A user who says no camera "
-       "should never see a camera, full stop.")
+       "attribute is true, e.g. the entire Echo Show 8/10/15/21 line). A user who declines a "
+       "camera should not be shown camera-equipped products under any ranking.")
 bullet("Soft signals feed into the category-specific scorer (engine._score_smart_display, "
        "_score_water_bottle, _score_kitchen_organizer). Each soft signal triggers one or more "
        "rules; firing a rule adds a positive score and appends the rule's name to that "
@@ -694,7 +744,7 @@ code_block(
 )
 caption("Listing B: _category_rule_matches for the same Owala product. Each name in this list "
         "is also a key in explainability._RULE_TEXT, which gets mapped to a human-readable "
-        "sentence on the 'Why this fits' page (Scene 4). The same names that drove the score "
+        "sentence on the 'Why this fits' page (Stage 4). The same names that drove the score "
         "drive the user-visible explanation — explanation grounded by construction.")
 
 para(
@@ -737,8 +787,9 @@ make_table([
     ("dim_review_signal",  "one row per product",      "product_id, rating_avg, review_count"),
     ("dim_session",        "one row per user session", "session_id, raw_input, category, preferences (JSON)"),
 ], col_widths=[1.8, 2.0, 2.2])
-caption("Table 4: Conceptual star schema. The current demo materialises this as a single "
-        "JSON file plus an in-process session store; migration to PostgreSQL is one ALTER away.")
+caption("Table 5: Conceptual star schema. The current prototype materialises this as a "
+        "single JSON file plus an in-process session store; the schema could be migrated "
+        "to PostgreSQL through a straightforward relational implementation.")
 
 heading(2, "Ranking and Decision Logic", "4.5")
 para(
@@ -768,10 +819,17 @@ caption("Equation 1: Shared score. norm(·) min-max normalizes within the candid
 
 para(
     "Category-specific scoring adds at most +0.10 per matched rule and subtracts 0.05 per "
-    "missed rule for which the user had expressed an explicit preference. The constants are "
-    "chosen so the deterministic shared score (range ≈ 0–1.0) dominates the rule adjustments "
-    "(range ≈ ±0.30 in practice), preventing keyword heuristics from overwhelming evidence-based "
-    "ranking. Weights by priority are summarised in Table 5."
+    "missed rule for which the user had expressed an explicit preference. Shared scoring "
+    "(rating, price, delivery) provides the baseline ranking and is the dominant signal in "
+    "the typical case: the shared component spans roughly the range [0, 1] while category "
+    "rule adjustments typically span ±0.30. However, when several rules fire together — "
+    "for example when a user explicitly states multiple category preferences such as "
+    "leak-proof, insulated, and stainless on water bottles — the cumulative bonus can "
+    "meaningfully change the ranking. In other words, the shared score determines the "
+    "baseline ordering, and category rules act as a calibrated adjustment whose influence "
+    "scales with how many user-stated preferences a product actually matches. The numerical "
+    "worked example in §5.4 illustrates this interaction concretely. Weights by priority are "
+    "summarised in Table 6."
 )
 make_table([
     ("Priority",     "w_rating", "w_price", "w_delivery"),
@@ -780,7 +838,7 @@ make_table([
     ("quality",      "0.60",     "0.20",    "0.20"),
     ("fast_delivery","0.30",     "0.20",    "0.50"),
 ], col_widths=[1.6, 1.4, 1.4, 1.6])
-caption("Table 5: Priority-mode weights. Each row sums to 1.0 by construction, ensuring the "
+caption("Table 6: Priority-mode weights. Each row sums to 1.0 by construction, ensuring the "
         "shared score remains in [0, 1].")
 
 heading(2, "Explainability Layer", "4.6")
@@ -805,28 +863,28 @@ para(
     "the same signals the ranker actually used, not post-hoc feature attributions."
 )
 
-heading(2, "Visualization and Five-Scene UI", "4.7")
+heading(2, "Visualization and Five-Stage User Interface", "4.7")
 para(
-    "The user-facing demo is a five-scene React application that walks through "
-    "the decision-support workflow visually:"
+    "The user-facing prototype is a five-stage React application that renders the "
+    "decision-support workflow as a sequence of interface stages:"
 )
 make_table([
-    ("Scene", "Purpose",                                   "Layer"),
+    ("Stage", "Purpose",                                   "Layer"),
     ("1",     "Frustration / empathic intake",             "Layer 1 (elicitation)"),
     ("2",     "Needs clarification (chip questions)",      "Layer 1 → Layer 2"),
     ("3",     "Recommendations grid (12 ranked tiles)",    "Layer 3"),
     ("4",     "Why we recommend this (per-product page)",  "Layer 4"),
     ("5",     "Daily-use lifecycle dashboard",             "Layer 5"),
 ], col_widths=[0.7, 3.2, 2.0])
-caption("Table 6: Mapping from UI scene to architectural layer. Each scene corresponds to "
+caption("Table 7: Mapping from UI stage to architectural layer. Each stage corresponds to "
         "exactly one layer of the five-layer model, making the architecture and the "
         "user experience legible to one another.")
 
 para(
-    "Visual choices follow the demo screenshots in the proposal: a dark navy header per scene, "
-    "a step indicator with five clickable dots, and a scene caption strip below each card "
+    "Visual choices follow the demo screenshots in the proposal: a dark navy header per stage, "
+    "a step indicator with five clickable dots, and a stage caption strip below each card "
     "reminding the operator (or grader) which layer is being demonstrated. The grid view in "
-    "Scene 3 is intentionally information-dense — the proposal critiques chat assistants for "
+    "Stage 3 is intentionally information-dense — the proposal critiques chat assistants for "
     "showing too few attributes per product, so each tile surfaces price, rating, two feature "
     "tags, a delivery window when scraped, and a save-for-later toggle inline."
 )
@@ -944,7 +1002,7 @@ heading(1, "Results", "5.")
 heading(2, "Scenario-Based Evaluation", "5.1")
 para(
     "Three scripted scenarios — one per product category — exercise the full "
-    "five-scene flow and compare the system's behavior against two reference assistants "
+    "five-stage flow and compare the system's behavior against two reference assistants "
     "(Amazon Rufus and ChatGPT-with-Shopping). Each scenario is end-to-end: free-form "
     "frustration, chip-based clarification, ranked recommendations, an explainable detail page, "
     "and a lifecycle dashboard. The full scripts and operator notes are in `docs/demo_scenarios.md`."
@@ -955,7 +1013,7 @@ make_table([
     ("Gym hydration",      "Owala FreeSip 19oz Insulated Stainless ($14.99)",                       "0.79"),
     ("Cabinet organization", "Brightroom Stackable Pantry Bin Set ($9–$16)",                       "0.81"),
 ], col_widths=[1.7, 3.6, 0.7])
-caption("Table 7: Top-1 result per scripted scenario. Score is the combined "
+caption("Table 8: Top-1 result per scripted scenario. Score is the combined "
         "shared+category score on the [0, ~1.4] scale used by the ranker.")
 
 para(
@@ -981,7 +1039,7 @@ if os.path.exists(fig_path):
 
 heading(2, "Comparison Against Baselines", "5.2")
 para(
-    "Table 8 evaluates each system on the four structural gaps identified in Section 2. The grading "
+    "Table 9 evaluates each system on the four structural gaps identified in Section 2. The grading "
     "rubric is: ✓ = present and useful in the same flow, ⚠ = present but partial, ✗ = absent. "
     "Evaluations were performed manually on each baseline using a representative query equivalent "
     "to the kitchen-cooking scenario above."
@@ -994,7 +1052,7 @@ make_table([
     ("Trade-off communication",            "✓",     "✗",     "⚠",       "✗"),
     ("Post-purchase lifecycle support",    "✓",     "✗",     "✗",       "✗"),
 ], col_widths=[2.7, 0.7, 0.8, 1.0, 0.8])
-caption("Table 8: Capability comparison against three representative baselines. Cells reflect "
+caption("Table 9: Capability comparison against three representative baselines. Cells reflect "
         "behavior observed during a single representative session in April 2026; results may "
         "drift as baselines evolve.")
 
@@ -1003,13 +1061,14 @@ para(
     "Five behaviors emerged consistently during informal scenario walkthroughs and from "
     "the iteration loop that hardened the implementation:"
 )
-bullet("Refinement reduces friction. After picking three chips in Scene 2, the user can refine "
-       "via free-text in Scene 3 ('actually under $80', 'faster delivery') and the engine re-ranks "
+bullet("Refinement reduces friction. After picking three chips in Stage 2, the user can refine "
+       "via free-text in Stage 3 ('actually under $80', 'faster delivery') and the engine re-ranks "
        "in under 200 ms — a meaningful contrast to baseline systems that require a fresh search.")
-bullet("Trade-off cards build trust. The yellow trade-off banner in Scene 4 was the most-noted "
-       "element in walkthrough feedback; users described it as the moment the system 'felt honest' "
-       "rather than promotional.")
-bullet("Lifecycle reinforces the purchase. Scene 5 changes the perceived value of the assistant "
+bullet("Trade-off cards build trust. The yellow trade-off banner in Stage 4 was the most-noted "
+       "element in walkthrough feedback; participants reported that the visible disclosure of "
+       "limitations increased their confidence in the recommendation relative to a promotional "
+       "tone.")
+bullet("Lifecycle reinforces the purchase. Stage 5 changes the perceived value of the assistant "
        "from a transactional tool to a daily routine. The Iter B personalization pass added ten "
        "distinct dashboards keyed to elicited preferences — a single user no longer sees a "
        "soccer-practice schedule designed for parents.")
@@ -1083,7 +1142,7 @@ para(
     "Data Scientist · Data Engineer)."
 )
 para(
-    "Table 9 summarizes the four sources and their distinct evaluation lenses. Table 10 "
+    "Table 10 summarizes the four sources and their distinct evaluation lenses. Table 11 "
     "lists representative findings from the Codex validation pass and the corresponding "
     "code change."
 )
@@ -1098,7 +1157,7 @@ make_table([
     ("Industry mentor",         "Domain expert review (Amazon, 13 yrs)",
                                 "Provenance flags must distinguish scraped vs estimated"),
 ], col_widths=[2.0, 2.2, 2.7])
-caption("Table 9: Four validation sources and their distinct evaluation lenses.")
+caption("Table 10: Four validation sources and their distinct evaluation lenses.")
 
 make_table([
     ("Codex finding",                                  "Fix applied"),
@@ -1108,7 +1167,7 @@ make_table([
     ("CORS preflight 400 on :127.0.0.1 origins",       "Allow-list expanded to four local dev origins"),
     ("'Lowest-cost' message could fire when untrue",   "Replaced by factual tradeoff_labels with spread requirement (§4.10)"),
 ], col_widths=[3.4, 3.6])
-caption("Table 10: Representative Codex GPT-5.5 findings and corresponding fixes.")
+caption("Table 11: Representative Codex GPT-5.5 findings and corresponding fixes.")
 
 heading(2, "Small-Scale User Feedback", "5.6")
 para(
@@ -1146,7 +1205,7 @@ para(
     "surfaced seven items — one with a real ranking-quality effect, two correctness or "
     "robustness gaps in the LLM-path code, one chip-vocabulary mismatch, and three "
     "cosmetic items. All seven were fixed and re-verified against the existing test "
-    "suite before this revision was produced. Table 11 summarizes the findings and the "
+    "suite before this revision was produced. Table 12 summarizes the findings and the "
     "applied fix; the updated curated_picks excerpt in Listing 7 (Appendix 9.7) reflects "
     "the first row."
 )
@@ -1167,7 +1226,7 @@ make_table([
     ("Cosmetic",   "British 'organiser_material_*' rule prefix in engine and explainability survived the prior US-spelling pass — internal only, but inconsistent with every public surface.",
                    "Renamed to 'organizer_material_*' in both files."),
 ], col_widths=[1.1, 3.0, 2.8])
-caption("Table 11: Self-audit findings and the corresponding code fix. Only the first "
+caption("Table 12: Self-audit findings and the corresponding code fix. Only the first "
         "row changes user-visible recommendation quality; the next three close LLM-path "
         "or vocabulary gaps; the last three are hygiene.")
 page_break()
@@ -1193,17 +1252,19 @@ para(
     "altering the rest of the stack."
 )
 para(
-    "The user impact is the closing of four structural gaps in current shopping assistants — "
-    "preference continuity, decision-critical attribute visibility, faithful explanations, and "
-    "post-purchase lifecycle support. The business impact follows: in a domain where ~70% of "
-    "carts are abandoned [5], a system that meaningfully reduces decision friction translates "
-    "directly into recovered revenue and reduced post-purchase regret."
+    "Within the scope of the prototype, the scenario-based evaluation suggests that the "
+    "system addresses four structural gaps in current shopping assistants — preference "
+    "continuity, decision-critical attribute visibility, faithful explanations, and "
+    "post-purchase lifecycle support. The business implication is that reducing decision "
+    "friction may plausibly support conversion and retention in a domain where roughly 70% "
+    "of carts are abandoned [5], but any such effect would need to be validated through a "
+    "larger user study or a live commerce deployment."
 )
 para(
     "Three directions are natural extensions. (i) A longitudinal user study would convert the "
     "qualitative observations of Section 5.3 into significance-tested decision-time and "
     "perceived-transparency metrics. (ii) Replacing the static lifecycle dashboard with real "
-    "calendar/kitchen integrations would convert Scene 5 from a demo into a product. (iii) "
+    "calendar/kitchen integrations would convert Stage 5 from a demo into a product. (iii) "
     "Integrating live promotions and inventory feeds would close the loop on the timeliness "
     "limitation noted in Section 3.4."
 )
@@ -1220,7 +1281,7 @@ para(
     "responsible for end-to-end design, implementation, and evaluation of the system: "
     "system architecture and the trust-boundary decision; data engineering (the Playwright "
     "scrapers, normalizer, and product schema); the ranking engine, explainability pass, and "
-    "fallback logic; the FastAPI back-end and the React five-scene front-end; the scenario "
+    "fallback logic; the FastAPI back-end and the React five-stage front-end; the scenario "
     "scripts and demo evaluation in Section 5; and this written report."
 )
 
@@ -1246,7 +1307,7 @@ bullet("Claude Code (the Anthropic agent CLI, also running on Opus 4.7) was the 
 bullet("Codex GPT-5.5 (OpenAI) was run as an independent technical validator against the same "
        "codebase. It enumerated demo-safety risks, drift between report claims and running "
        "code, and places where LLM unavailability would break user-facing behaviour. "
-       "Representative findings and their corresponding fixes are listed in Table 10. Each "
+       "Representative findings and their corresponding fixes are listed in Table 11. Each "
        "finding was either fixed in code or dismissed with a written reason; nothing was "
        "tacitly accepted. The multi-agent validation method is described in Section 5.5.")
 bullet("ChatGPT (OpenAI) was used twice during literature review for structured search and for "
@@ -1561,6 +1622,6 @@ caption("Listing 9: Regex fallback parser. Three categories of phrase are handle
         "like this; the demo runs end-to-end with ANTHROPIC_API_KEY=placeholder.")
 
 # ─── Save ──────────────────────────────────────────────────────────────────────
-out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v9.docx")
+out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v11.docx")
 doc.save(out_path)
 print(f"saved {out_path}")

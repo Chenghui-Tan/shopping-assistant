@@ -40,3 +40,29 @@ docs/~$*.pptx
 # Claude Code session metadata (local IDE state, not source)
 .claude/
 .superpowers/
+docs/superpowers/
+
+# Internal process / handoff docs (not for GitHub)
+CRITIQUE.md
+EVALUATION.md
+HANDOFF.md
+PROGRESS.md
+
+# Older draft build scripts and historical report/slide versions
+docs/build_report.py
+docs/build_report_v[0-7].py
+docs/build_ppt.py
+docs/build_ppt_v[3-6].py
+docs/build_linkedin*.py
+docs/build_code_images.py
+docs/linkedin_*.docx
+docs/linkedin_*.pdf
+docs/capstone_report.pdf
+docs/capstone_report_v[0-9].docx
+docs/capstone_report_v[0-9].pdf
+docs/capstone_report_v10.docx
+docs/capstone_report_v10.pdf
+docs/capstone_presentation.pptx
+docs/capstone_presentation_v[1-4].*
+docs/figures/code_article*.png
+docs/ChenghuiTan-Capstone Proposal.docx

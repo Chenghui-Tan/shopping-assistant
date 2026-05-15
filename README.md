@@ -1,15 +1,23 @@
-# AI Shopping Assistant
+# AI Shopping Assistant — MSBA Capstone
 
-Decision-support shopping assistant for the capstone demo. The app combines:
+A decision-oriented conversational shopping assistant organized around a strict
+trust boundary: Claude (Anthropic) handles natural-language work; the ranking
+itself is deterministic, rule-based Python and never invokes the LLM. The
+prototype covers smart displays, water bottles, and kitchen organizers (100
+products scraped from Amazon and Target).
 
-- a FastAPI backend for sessions, preference elicitation, recommendations, refinement, saved products, and lifecycle support
-- a React/Vite frontend for the five-scene demo flow
-- a local cleaned product catalog in `data/clean/products_clean.json`
-- optional Anthropic-powered parsing/explanations with deterministic fallbacks when no API key is available
+- **Backend**: FastAPI — sessions, preference elicitation, ranking, refinement, saved products, lifecycle
+- **Frontend**: React + Vite — five-stage UI (Frustration → Questions → Recommendations → Why → Lifecycle)
+- **Engine**: deterministic scoring in `recommendation_Algorithem/`
+- **Data**: cleaned catalog at `data/clean/products_clean.json`
 
-## Fresh Setup
+The final report (`docs/capstone_report_v11.pdf`) and slides
+(`docs/capstone_presentation_v5.pdf`) describe the architecture, the
+trust-boundary decision, and the scenario-based evaluation in detail.
 
-Use two terminals.
+## Setup
+
+Two terminals.
 
 ### 1. Backend
 
@@ -19,13 +27,13 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Optional. Use "placeholder" to force deterministic fallback behavior.
+# Optional. Use "placeholder" to force the deterministic fallback path.
 export ANTHROPIC_API_KEY=placeholder
 
 uvicorn main:app --reload --port 8000
 ```
 
-The backend can also be started from the repository root:
+Or from the repository root:
 
 ```bash
 uvicorn backend.main:app --reload --port 8000
@@ -39,42 +47,51 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open <http://localhost:5173>.
 
 ## Environment Variables
-
-Copy `.env.example` if you want a local reference file:
 
 ```bash
 cp .env.example .env
 ```
 
-Important variables:
+- `ANTHROPIC_API_KEY` — optional. Enables LLM intent parsing, refine parsing,
+  and richer explanation text. Use `placeholder` for offline/demo fallback
+  mode; every Claude call has a deterministic Python fallback so the system
+  runs end-to-end without an API key.
 
-- `ANTHROPIC_API_KEY`: optional. Enables LLM intent parsing, refinement parsing, and richer explanation text. Use `placeholder` for offline/demo fallback mode.
-- `VITE_API_BASE_URL`: documented for deployment clarity. The current frontend code uses `http://localhost:8000` directly in `frontend/src/api.js`.
-
-Do not commit real API keys. `.env` files are ignored by `.gitignore`.
+Real API keys are never committed (`.env` is gitignored).
 
 ## Demo Flow
 
-1. Start with one of the sample prompts or type a shopper frustration.
-2. Answer Scene 2 preference questions.
-3. Review the three differentiated picks and optionally expand all options.
-4. Use the refine bar, for example:
+1. Type a shopper frustration (or pick a sample prompt).
+2. Answer the Stage-2 chip questions (sequence is category-specific).
+3. Review the three differentiated picks (Best Fit / Budget / Stretch) and
+   optionally expand all options.
+4. Refine via free text, e.g.:
    - smart display: `larger screen`, `works with Google`, `no camera`
    - water bottle: `leakproof`, `larger capacity`, `under $20`
    - kitchen organizer: `expandable`, `clear`, `under $15`
-5. Click `See why` to show grounded explanation, preference checks, and trade-offs.
-6. Continue to lifecycle support to show post-purchase assistant value.
+5. Click **See why** for grounded explanation, preference checks, and
+   trade-offs.
+6. Continue to the Stage-5 lifecycle dashboard.
 
-For scripted walkthroughs, see `docs/demo_scenarios.md`.
+Scripted walkthroughs: `docs/demo_scenarios.md`.
 
-## Validation Commands
+## Tests
 
 ```bash
 pytest backend/tests
 cd frontend && npm run build
 ```
 
-`npm run lint` currently reports existing frontend lint issues unrelated to backend runnability.
+## Repository Layout
+
+```
+backend/                 FastAPI service + tests
+frontend/                React + Vite app
+recommendation_Algorithem/  Deterministic ranking engine
+scripts/                 Playwright scrapers + ETL pipeline
+data/clean/              Cleaned product catalog (100 SKUs)
+docs/                    Final report, slides, figure build scripts
+```
