@@ -323,7 +323,7 @@ para(
     "Shopping, and Google Shopping. These four gaps are broad categories; the seven detailed "
     "capabilities discussed in the accompanying presentation slides decompose them into "
     "finer-grained behaviors (e.g., trade-off cards, relaxation banners, lifecycle "
-    "personalisation). Two qualitative claims are realized "
+    "personalization). Two qualitative claims are realized "
     "in code rather than asserted in prose: explanations are grounded in the same rule_matches "
     "the ranker actually used (a shared rule->text dictionary spans backend and frontend), "
     "and preference continuity is visible to the user as a diff card per refine turn. "
@@ -418,7 +418,7 @@ caption("Table 1: Mapping of the four structural gaps to system features and the
         "are broad categories; the seven detailed capabilities described in the "
         "presentation slides decompose these four categories into finer-grained "
         "behaviors (e.g., trade-off cards, relaxation banners, lifecycle "
-        "personalisation are sub-features under gaps 2 and 4).")
+        "personalization are sub-features under gaps 2 and 4).")
 
 heading(2, "Scope and Boundaries", "1.3")
 para(
@@ -527,22 +527,22 @@ para(
     "Descriptive statistics for the three categories are summarized in Table 3. The "
     "three categories were chosen to span a wide range of decision difficulty: smart "
     "displays are a high-consideration purchase with the broadest price range "
-    "(\\$24-\\$424, median \\$114) and the longest average delivery time, while water "
-    "bottles and kitchen organisers are everyday items with tight prices (median "
-    "\\$25 and \\$14 respectively) and short delivery windows. Average ratings are "
-    "high across all categories (4.56-4.68 on a 1-5 scale), so rating alone is a "
+    "($24–$424, median $114) and the longest average delivery time, while water "
+    "bottles and kitchen organizers are everyday items with tight prices (median "
+    "$25 and $14 respectively) and short delivery windows. Average ratings are "
+    "high across all categories (4.56–4.68 on a 1–5 scale), so rating alone is a "
     "weak discriminator and the ranker must rely on price, delivery, and "
     "category-specific features to differentiate products."
 )
 make_table([
     ("Category",          "n",   "Price min/median/max ($)", "Rating mean (sd)", "Reviews median", "Delivery median (days)"),
-    ("Smart Display",     "30",  "24 / 114 / 424",           "4.62 (0.15)",      "1{,}450",        "5"),
-    ("Water Bottle",      "35",  "6 / 25 / 40",              "4.56 (0.27)",      "13{,}993",       "3"),
+    ("Smart Display",     "30",  "24 / 114 / 424",           "4.62 (0.15)",      "1,450",          "5"),
+    ("Water Bottle",      "35",  "6 / 25 / 40",              "4.56 (0.27)",      "13,993",         "3"),
     ("Kitchen Organizer", "35",  "2 / 14 / 28",              "4.68 (0.17)",      "161",            "3"),
 ], col_widths=[1.5, 0.4, 1.6, 1.1, 1.0, 1.2])
 caption("Table 3: Descriptive statistics by category. Price spread across smart "
-        "displays is roughly 17x the median, compared with 1.8x for kitchen "
-        "organisers, motivating per-category scoring rather than a single global "
+        "displays is roughly 17× the median, compared with 1.8× for kitchen "
+        "organizers, motivating per-category scoring rather than a single global "
         "ranker.")
 
 # Figure 1 — Exploratory catalog summary (price, rating, review count by category).
@@ -1432,7 +1432,7 @@ refs = [
     "[6]  S. S. Iyengar and M. R. Lepper, “When choice is demotivating: Can one desire too much of a good thing?,” Journal of Personality and Social Psychology, vol. 79, no. 6, pp. 995-1006, 2000.",
     "[7]  J. J. Inman and M. Zeelenberg, “Regret in repeat purchase versus switching decisions: The attenuating role of decision justifiability,” Journal of Consumer Research, vol. 29, no. 1, pp. 116-128, 2002.",
     "[8]  Amazon, “Amazon Rufus product overview,” Amazon Inc., 2024. [Online]. Available: https://www.aboutamazon.com/news/retail/amazon-rufus",
-    "[9]  OpenAI, “Introducing ChatGPT shopping,” OpenAI Blog, Nov. 2024. [Online]. Available: https://openai.com/blog/chatgpt-shopping",
+    "[9]  OpenAI, “Buy it in ChatGPT: Instant Checkout and the Agentic Commerce Protocol,” OpenAI, Sept. 29, 2025. [Online]. Available: https://openai.com/index/buy-it-in-chatgpt/",
     "[10] X. Chen et al., “Towards conversational recommendation: A survey,” ACM Computing Surveys, vol. 55, no. 9, pp. 1–37, 2023.",
     "[11] B. Shneiderman, Designing the User Interface: Strategies for Effective Human–Computer Interaction, 6th ed. Boston, MA, USA: Pearson, 2016.",
     "[12] F. Ricci, L. Rokach, and B. Shapira, Eds., Recommender Systems Handbook, 3rd ed. New York, NY, USA: Springer, 2022.",
@@ -1440,7 +1440,7 @@ refs = [
     "[14] T. Miller, “Explanation in artificial intelligence: Insights from the social sciences,” Artificial Intelligence, vol. 267, pp. 1–38, 2019.",
     "[15] N. Tintarev and J. Masthoff, “Designing and evaluating explanations for recommender systems,” in Recommender Systems Handbook, F. Ricci, L. Rokach, B. Shapira, and P. B. Kantor, Eds. Boston, MA, USA: Springer, 2011, pp. 479-510.",
     "[16] Microsoft Corp., “Playwright for Python documentation,” 2026. [Online]. Available: https://playwright.dev/python/",
-    "[17] Anthropic, “Claude documentation and API reference,” Anthropic, 2026. [Online]. Available: https://docs.anthropic.com",
+    "[17] Anthropic, “Claude documentation and API reference,” Anthropic, 2026. [Online]. Available: https://platform.claude.com/docs/",
 ]
 for r in refs:
     p = doc.add_paragraph()
@@ -1503,7 +1503,11 @@ code_block('''def normalize_delivery(raw: str | None) -> int | None:
             return int(m.group(1))
 
     # Absolute date: "by Mon, Mar 14" / "arrives Mar 14"
-    m = re.search(r"(?:by|arrives?|get it by)[^a-z]*([a-z]{3})\\w*\\s*[,.]?\\s*(\\d{1,2})", s)
+    m = re.search(
+        r"(?:by|arrives?|get it by)[^a-z]*"
+        r"([a-z]{3})\\w*\\s*[,.]?\\s*(\\d{1,2})",
+        s,
+    )
     if m:
         return _days_until_month_day(m.group(1), m.group(2))
     return None''')
@@ -1545,9 +1549,11 @@ code_block('''def _score_water_bottle(product, preferences, features):
     score, matches = 0.0, []
 
     if use_case == "gym":
-        score = _apply_rule(score, matches,
-            features["lightweight"] or _title_has(product, "freesip", "owala", "stainless steel"),
-            "gym_suitable")
+        gym_match = (
+            features["lightweight"]
+            or _title_has(product, "freesip", "owala", "stainless steel")
+        )
+        score = _apply_rule(score, matches, gym_match, "gym_suitable")
         score = _apply_rule(score, matches, features["insulated"], "insulated_gym")
 
     if preferences.get("insulated"):
@@ -1676,14 +1682,19 @@ code_block('''def _preference_checks(p, prefs):
     if use_case:
         wb_rule = {"gym": "gym_suitable", "outdoor": "outdoor_capacity",
                    "kids": "kids_design", "daily": "daily_use"}
+        cases = use_case if isinstance(use_case, list) else [use_case]
         matched = any([
-            cat == "water_bottle" and wb_rule.get(u) in rules,
-            cat == "smart_display" and u == "cooking"        and "kitchen_hub_or_recipe" in rules,
-            cat == "smart_display" and u == "family"         and "family_scheduling"     in rules,
-            cat == "smart_display" and u == "entertainment"  and "entertainment_features" in rules,
-        ] for u in (use_case if isinstance(use_case, list) else [use_case]))
-        rows.append(_check("Use case fit", "match" if matched else "unknown",
-                           ", ".join(use_case if isinstance(use_case, list) else [use_case])))
+            cat == "water_bottle"  and wb_rule.get(u) in rules,
+            cat == "smart_display" and u == "cooking"
+                                   and "kitchen_hub_or_recipe" in rules,
+            cat == "smart_display" and u == "family"
+                                   and "family_scheduling" in rules,
+            cat == "smart_display" and u == "entertainment"
+                                   and "entertainment_features" in rules,
+        ] for u in cases)
+        rows.append(_check("Use case fit",
+                           "match" if matched else "unknown",
+                           ", ".join(cases)))
 
     # ... price_max, material, drinking_style, insulated, size, ecosystem,
     #     screen_size, no_camera, organizer_material, visibility — each a row ...
@@ -1719,6 +1730,6 @@ caption("Listing 9: Regex fallback parser. Three categories of phrase are handle
         "like this; the demo runs end-to-end with ANTHROPIC_API_KEY=placeholder.")
 
 # ─── Save ──────────────────────────────────────────────────────────────────────
-out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v12.docx")
+out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v13.docx")
 doc.save(out_path)
 print(f"saved {out_path}")
