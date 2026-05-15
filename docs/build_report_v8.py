@@ -224,13 +224,12 @@ cover_line("Explainable Recommendations",               size=16, after=14)
 hr()
 
 # Big vertical space, then author + degree + date stack
-for _ in range(8): doc.add_paragraph()
+for _ in range(6): doc.add_paragraph()
 cover_line("Chenghui Tan",                                       size=14, bold=True, after=6)
 cover_line("Master of Science in Business Analytics (MSBA)",     size=12, after=2)
-cover_line("California State University, East Bay",              size=12, after=14)
-cover_line("May 2026",                                           size=12, after=14)
-cover_line("Source code: https://github.com/Chenghui-Tan/shopping-assistant",
-           size=10, italic=True, after=0)
+cover_line("California State University, East Bay",              size=12, after=10)
+cover_line("Faculty Advisor: Dr. Surendra Sarnikar",             size=12, after=10)
+cover_line("May 2026",                                           size=12, after=0)
 
 page_break()
 
@@ -1315,7 +1314,7 @@ para(
     "All three answers are bounded by the scope statement in §1.3: the dataset is "
     "small, the evaluation is heuristic, and no formal user study was conducted. "
     "What the prototype demonstrates is feasibility of the proposed five-layer "
-    "architecture and deterministic decision model, not generalisability to "
+    "architecture and deterministic decision model, not generalizability to "
     "catalog-scale or live-commerce settings."
 )
 page_break()
@@ -1456,6 +1455,11 @@ page_break()
 # 9. APPENDIX
 # ════════════════════════════════════════════════════════════════════════════
 heading(1, "Appendix — Code Listings", "9.")
+para(
+    "Full source code repository: https://github.com/Chenghui-Tan/shopping-assistant. "
+    "The excerpts in this appendix are reproduced verbatim from the open-source "
+    "repository above; see each listing's filename header for the canonical path."
+)
 
 heading(2, "ETL Pipeline Orchestrator (run_pipeline.py — excerpt)", "9.1")
 code_block('''async def run(categories: list[str], headed: bool) -> None:
@@ -1730,6 +1734,6 @@ caption("Listing 9: Regex fallback parser. Three categories of phrase are handle
         "like this; the demo runs end-to-end with ANTHROPIC_API_KEY=placeholder.")
 
 # ─── Save ──────────────────────────────────────────────────────────────────────
-out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v13.docx")
+out_path = os.path.join(os.path.dirname(__file__), "capstone_report_v14.docx")
 doc.save(out_path)
 print(f"saved {out_path}")
