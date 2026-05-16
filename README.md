@@ -11,10 +11,9 @@ products scraped from Amazon and Target).
 - **Engine**: deterministic scoring in `recommendation_Algorithem/`
 - **Data**: cleaned catalog at `data/clean/products_clean.json`
 
-The final report and slides (kept private) describe the architecture, the
-trust-boundary decision, and the scenario-based evaluation in detail. The
-`docs/` folder here contains the Python build scripts that generate them
-programmatically (matplotlib + python-docx + python-pptx).
+A separate written report and presentation deck describe the architecture
+and the trust-boundary decision in detail; both are kept outside this
+repository.
 
 ## Setup
 
@@ -94,5 +93,5 @@ frontend/                React + Vite app
 recommendation_Algorithem/  Deterministic ranking engine
 scripts/                 Playwright scrapers + ETL pipeline
 data/clean/              Cleaned product catalog (100 SKUs)
-docs/                    Final report, slides, figure build scripts
+docs/                    Demo walkthrough (demo_scenarios.md)
 ```

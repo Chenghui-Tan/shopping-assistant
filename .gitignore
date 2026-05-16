@@ -80,6 +80,11 @@ docs/capstone_report_v*.docx
 docs/capstone_report_v*.pdf
 docs/capstone_presentation_v*.pptx
 docs/capstone_presentation_v*.pdf
+
+# Report/slide build artifacts — not part of the product
+docs/build_*.py
+docs/figures/
+docs/results_*.png
 docs/capstone_presentation.pptx
 docs/capstone_presentation_v[1-4].*
 docs/figures/code_article*.png
