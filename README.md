@@ -11,9 +11,10 @@ products scraped from Amazon and Target).
 - **Engine**: deterministic scoring in `recommendation_Algorithem/`
 - **Data**: cleaned catalog at `data/clean/products_clean.json`
 
-The final report (`docs/capstone_report_v11.pdf`) and slides
-(`docs/capstone_presentation_v5.pdf`) describe the architecture, the
-trust-boundary decision, and the scenario-based evaluation in detail.
+The final report and slides (kept private) describe the architecture, the
+trust-boundary decision, and the scenario-based evaluation in detail. The
+`docs/` folder here contains the Python build scripts that generate them
+programmatically (matplotlib + python-docx + python-pptx).
 
 ## Setup
 
