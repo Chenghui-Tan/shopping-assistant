@@ -76,8 +76,6 @@ Real API keys are never committed (`.env` is gitignored).
    trade-offs.
 6. Continue to the Stage-5 lifecycle dashboard.
 
-Scripted walkthroughs: `docs/demo_scenarios.md`.
-
 ## Tests
 
 ```bash
@@ -93,5 +91,4 @@ frontend/                React + Vite app
 recommendation_Algorithem/  Deterministic ranking engine
 scripts/                 Playwright scrapers + ETL pipeline
 data/clean/              Cleaned product catalog (100 SKUs)
-docs/                    Demo walkthrough (demo_scenarios.md)
 ```
